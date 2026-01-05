@@ -9,14 +9,14 @@ console.log('JWT_SECRET_KEY:', process.env.JWT_SECRET_KEY);
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
 if (!process.env.JWT_SECRET_KEY) {
-  console.warn("Warning: JWT_SECRET_KEY is not defined. Using a fallback value is not secure.");
+    console.warn("Warning: JWT_SECRET_KEY is not defined. Using a fallback value is not secure.");
 }
 
 export const signup = async (req, res) => {
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password, bio, location } = req.body;
     try {
         if (!fullName || !email || !password) {
-            return res.status(400).json({ message: "All fields are required" });
+            return res.status(400).json({ message: "Full name, email and password are required" });
         }
         if (password.length < 8) {
             return res.status(400).json({ message: "Password must be at least 8 characters long" });
@@ -30,7 +30,7 @@ export const signup = async (req, res) => {
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ message: "User already exists, please use a different one!" });
+            return res.status(400).json({ message: "User already exists, please use a different email!" });
         }
 
         const idx = Math.floor(Math.random() * 1000) + 1;
@@ -41,7 +41,10 @@ export const signup = async (req, res) => {
             fullName,
             email,
             password,
-            profilePic: randomAvatar
+            bio: bio || "",
+            location: location || "",
+            profilePic: randomAvatar,
+            isOnline: true
         });
 
         // after user is created, upsert into Stream
@@ -69,10 +72,12 @@ export const signup = async (req, res) => {
         });
 
         // Return token in the response as well so frontends that cannot rely on cookies can use it
-        res.status(201).json({ success: true, token, user: {
-            ...newUser.toObject(),
-             password: undefined
-            } });
+        res.status(201).json({
+            success: true, token, user: {
+                ...newUser.toObject(),
+                password: undefined
+            }
+        });
     } catch (err) {
         console.error("Error in signup:", err);
         return res.status(500).json({ message: "Internal server error" });
@@ -99,6 +104,11 @@ export const login = async (req, res) => {
             return res.status(400).json({ message: "Invalid email or password" });
         }
 
+        // Update user online status
+        user.isOnline = true;
+        user.lastSeen = new Date();
+        await user.save();
+
         // upsert into Stream on login
         try {
             await upsertStreamUser({
@@ -109,6 +119,12 @@ export const login = async (req, res) => {
         } catch (err) {
             console.warn("Stream upsert failed for login user:", err);
         }
+
+        // Update user online status
+        await User.findByIdAndUpdate(user._id, {
+            isOnline: true,
+            lastSeen: new Date()
+        });
 
         const jwtSecretKey = process.env.JWT_SECRET_KEY || 'default_secret_key';
         const token = jwt.sign({ userId: user._id }, jwtSecretKey, { expiresIn: '7d' });
@@ -130,66 +146,20 @@ export const login = async (req, res) => {
     }
 };
 
-export const logout = (req, res) => {
-    res.clearCookie('jwt');
-    res.status(200).json({ success: true, message: "Logged out successfully" });
-};
-
-export async function onboard(req, res) {
+export const logout = async (req, res) => {
     try {
-        const userId = req.user._id;
-        const { fullName, bio, nativeLanguage, learningLanguage, location } = req.body;
-
-        // Validate required fields
-        const missingFields = Object.entries({
-            fullName: !fullName && "fullName",
-            bio: !bio && "bio",
-            nativeLanguage: !nativeLanguage && "nativeLanguage",
-            learningLanguage: !learningLanguage && "learningLanguage",
-            location: !location && "location",
-        })
-            .filter(([_, value]) => value) // Keep only missing fields
-            .map(([key]) => key); // Extract field names
-
-        if (missingFields.length > 0) {
-            return res.status(400).json({
-                message: "All fields are required",
-                missingFields,
+        // Update user offline status
+        if (req.user) {
+            await User.findByIdAndUpdate(req.user._id, {
+                isOnline: false,
+                lastSeen: new Date()
             });
         }
 
-        // Update the user in the database
-        const updatedUser = await User.findByIdAndUpdate(
-            userId,
-            {
-                fullName,
-                bio,
-                nativeLanguage,
-                learningLanguage,
-                location,
-                isOnboarded: true,
-            },
-            { new: true } // Return the updated document
-        );
-
-        if (!updatedUser) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        try {
-            await upsertStreamUser({
-                id: updatedUser._id.toString(),
-                name: updatedUser.fullName,
-                image: updatedUser.profilePic || "",
-            });
-            console.log(`Stream user updated after onboarding for: ${updatedUser.fullName}`);
-        } catch (error) {
-            console.error("Error upserting Stream user:", error);
-        }
-
-        res.status(200).json({ success: true, user: updatedUser });
-    } catch (err) {
-        console.error("Error in onboarding:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        res.clearCookie('jwt');
+        res.status(200).json({ success: true, message: "Logged out successfully" });
+    } catch (error) {
+        console.error("Error in logout:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
 };

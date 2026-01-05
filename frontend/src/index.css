@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Custom padding for bio in list view */
+.pl-15 {
+  padding-left: 3.75rem;
+  /* 60px - matches avatar + gap */
+}
+
 .str-chat_channel {
   display: flex;
   align-items: center;
@@ -37,4 +58,77 @@
   border-top: 1px solid #e5e7eb;
   padding: 20px;
   background: white;
+}
+
+/* Modern chat messages styling */
+.modern-chat-messages .str-chat__message-list {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 1rem;
+}
+
+.modern-chat-messages .str-chat__message-simple {
+  margin-bottom: 0.75rem;
+}
+
+.modern-chat-messages .str-chat__message-simple--me .str-chat__message-simple-text {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border-radius: 18px 18px 4px 18px;
+  padding: 12px 16px;
+  max-width: 75%;
+  margin-left: auto;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.modern-chat-messages .str-chat__message-simple:not(.str-chat__message-simple--me) .str-chat__message-simple-text {
+  background: white;
+  color: #374151;
+  border-radius: 18px 18px 18px 4px;
+  padding: 12px 16px;
+  max-width: 75%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.modern-chat-messages .str-chat__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modern-chat-messages .str-chat__message-simple-timestamp {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Hide default Stream UI elements for custom input */
+.modern-chat-messages .str-chat__message-input {
+  display: none;
+}
+
+/* Custom scrollbar for chat */
+.modern-chat-messages .str-chat__message-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modern-chat-messages .str-chat__message-list-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.modern-chat-messages .str-chat__message-list-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.modern-chat-messages .str-chat__message-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }

@@ -4,6 +4,7 @@ import cors from 'cors';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.route.js';
 import chatRoutes from './routes/chat.route.js';
+import groupRoutes from './routes/group.route.js';
 import { connectDB } from './lib/db.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -17,7 +18,7 @@ const __dirname = path.resolve();
 
 // basic middleware
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
-app.use(cors({ origin: corsOrigin, credentials: true, methods: ['GET','POST','PUT','DELETE','OPTIONS'] }));
+app.use(cors({ origin: corsOrigin, credentials: true, methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -29,6 +30,7 @@ connectDB()
     app.use('/api/auth', authRoutes);
     app.use('/api/users', userRoutes);
     app.use('/api/stream', chatRoutes);
+    app.use('/api/groups', groupRoutes);
     app.get('/api/health', (req, res) => res.json({ ok: true }));
 
     // serve frontend (safe catch-all)
@@ -59,7 +61,7 @@ connectDB()
       });
       ws.on('close', () => console.log('WebSocket closed:', req.url));
       // optional: send initial message so client knows connection succeeded
-      try { ws.send(JSON.stringify({ type: 'connected' })); } catch (e) {}
+      try { ws.send(JSON.stringify({ type: 'connected' })); } catch (e) { }
     });
 
     // handle upgrade requests: allow /ws (and /ws/*), reject others

@@ -1,122 +1,179 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import React, { useState } from 'react'
-import { login } from '../lib/api';
-import { MessageSquareIcon } from 'lucide-react';
-import{ Link } from 'react-router-dom'
+import React, { useState } from 'react';
+import { MessageSquare, Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useLogin } from '../hooks/useLogin';
 
 function LogInPage() {
-
   const [formData, setFormData] = useState({
     email: "",
     password: ""
-  })
-   const queryClient = useQueryClient();
-     const {mutate:loginMutation,isPending,error}=useMutation({
-      mutationFn: login,
-      onSuccess: () => queryClient.invalidateQueries({queryKey: ["authUser"]}),
-      onError: (err) => {
-        console.error('Login error:', err?.response?.data || err);
-      }
-     });
-     const handleLogin=(e) => {
-      e.preventDefault();
-      loginMutation(formData);
-     }
+  });
+  const [showPassword, setShowPassword] = useState(false);
+
+  const { mutate: loginMutation, isPending, error } = useLogin();
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (!formData.email || !formData.password) {
+      return;
+    }
+    loginMutation(formData);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
   return (
-    <div className ="flex items-center justify-center h-screen p-4 sm-p-8"data-theme="forest" >
-       <div className= "flex flex-col w-full max-w-5xl mx-auto overflow-hidden border rounded shadow border-primary/25 lg:flex-row bg-base-100-xl-lg">
-              {/**login form section */}
-          <div className= "flex flex-col w-full p-4 lg:w-1/2 sm:p-8 ">
-            {/**logo  */}
-            <div className="flex items-center justify-start gap-2 mb-4">
-               <MessageSquareIcon className= "size-9 text-primary"/>
-                <span className = "font-mono text-3xl font-bold tracking-wider text-transparentr bg-clip-text bg-gradient-to-r form-primary to-secondsry">
-                  ChatMe
-                </span>
-            </div>
-               {/**Error message display */}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-base-100 to-secondary/10 p-4">
+      <div className="w-full max-w-6xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-8 items-center">
+
+          {/* Left Side - Login Form */}
+          <div className="w-full max-w-md mx-auto lg:mx-0">
+            <div className="bg-base-100 rounded-2xl shadow-xl p-8 border border-base-300">
+
+              {/* Logo */}
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <div className="p-3 bg-primary/10 rounded-xl">
+                    <MessageSquare className="w-8 h-8 text-primary" />
+                  </div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    ChatMe
+                  </h1>
+                </div>
+                <h2 className="text-2xl font-semibold text-base-content mb-2">Welcome back!</h2>
+                <p className="text-base-content/70">
+                  Sign in to continue your conversations
+                </p>
+              </div>
+
+              {/* Test Credentials Info */}
+              <div className="mb-6 p-4 bg-info/10 border border-info/20 rounded-lg">
+                <h3 className="font-semibold text-info mb-2">Test Credentials:</h3>
+                <p className="text-sm text-info/80">
+                  <strong>Email:</strong> test@example.com<br />
+                  <strong>Password:</strong> password123
+                </p>
+              </div>
+
+              {/* Error Display */}
               {error && (
-                <div className= "mb-4 alert alert-error">
-                  <span>{error?.response?.data?.message}</span>
+                <div className="mb-6 alert alert-error">
+                  <span>{error?.response?.data?.message || error?.message || 'Login failed. Please try again.'}</span>
                 </div>
               )}
-              <div className= "w-full">
-                <form onSubmit={handleLogin} className= "">
-                  <div className= "space-y-4">
-                    <div>
-                        <h2 className="text-xl font-semibold">Wellcome back!</h2>
-                        <p className="text-sn opacity-70">
-                           Please enter your credentials to access your account.
-                       </p>
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className= "w-full space-y-2 form-control">
-                        <label className="label">
-                          <span className="label-text">Email</span>
-                        </label>
-                        <input 
-                         type="email"
-                         placeholder = "hallo@gmail.com"
-                         className="w-full input input-bordered"
-                         value={formData.email}
-                         onChange={(e) =>setFormData({...formData,email: e.target.value})}
-                         required
-                         />
-                      </div>
-                      <div className= "w-full space-y-2 form-control">
-                        <label className="label">
-                          <span className="label-text">Password</span>
-                        </label>
-                        <input 
-                         type="password"
-                         placeholder = "........"
-                         className="w-full input input-bordered"
-                         value={formData.password}
-                         onChange={(e) =>setFormData({...formData,password: e.target.value})}
-                         required
-                         />
-                      </div>
-                      <button type="submit" className="w-full btn btn-primary" disabled={isPending}>
-                        {isPending ? (
-                        <>
-                           <span className="loadig loading-spinner loading-xs"></span>
-                           Signing in...
-                        </>
-                        ) : (
-                          "Log In"
-                        )}
-                      </button>
-                      <div className= "mt-4 text-center">
-                        <p className="text-sn">
-                          Don't have an account? {""}
-                          <Link to="/signup" className="text-primary hover:underline">
-                             Create one
-                          </Link>
-                        </p>
-                      </div>
-                    </div>
+
+              {/* Login Form */}
+              <form onSubmit={handleLogin} className="space-y-6">
+
+                {/* Email Field */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Email Address</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/40" />
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="Enter your email"
+                      className="input input-bordered w-full pl-12 focus:input-primary"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isPending}
+                    />
                   </div>
-                </form>
-              </div>
-          </div>
-          {/**Image Section */}
-          <div className="items-center hidden w-full max-w-sm justif y-center lg:flex lg:w-1/2 bgprimary/10">
-            <div className="max-w-md p-8 ">
-               <div className="relative max-w-sm mx-auto aspect-square" >
-                   <img src="/1.png" alt="Connection Iluatration" className="w-full h-full" />
-               </div>
-               
-               <div className="mt-6 space-y-3 text-center">
-                  <h2 className="text-xl font-semibold">Connect whith Chat parenta world</h2>
-                  <p className="opacity-70">
-                    Practice conversation, make friends,and improve social notwotk.
+                </div>
+
+                {/* Password Field */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Password</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/40" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      placeholder="Enter your password"
+                      className="input input-bordered w-full pl-12 pr-12 focus:input-primary"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isPending}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/40 hover:text-base-content"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isPending}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Login Button */}
+                <button
+                  type="submit"
+                  className="btn btn-primary w-full text-white"
+                  disabled={isPending || !formData.email || !formData.password}
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
+                </button>
+
+                {/* Signup Link */}
+                <div className="text-center pt-4">
+                  <p className="text-base-content/70">
+                    Don't have an account?{" "}
+                    <Link
+                      to="/signup"
+                      className="text-primary hover:text-primary-focus font-semibold hover:underline"
+                    >
+                      Create one here
+                    </Link>
                   </p>
-               </div>
+                </div>
+              </form>
             </div>
           </div>
-       </div>
+
+          {/* Right Side - Illustration */}
+          <div className="hidden lg:block">
+            <div className="text-center">
+              <div className="relative max-w-lg mx-auto">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full blur-3xl"></div>
+                <img
+                  src="/1.png"
+                  alt="Chat Illustration"
+                  className="relative w-full h-auto max-w-md mx-auto"
+                />
+              </div>
+              <div className="mt-8 space-y-4">
+                <h3 className="text-2xl font-bold text-base-content">
+                  Connect with friends worldwide
+                </h3>
+                <p className="text-base-content/70 text-lg max-w-md mx-auto">
+                  Join millions of users in seamless conversations, share moments, and build lasting connections.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
 
-export default LogInPage
+export default LogInPage;

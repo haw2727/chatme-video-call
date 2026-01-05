@@ -3,13 +3,16 @@ import React from 'react'
 import { acceptFriendRequest, getFriendRequests } from '../lib/api'
 import { BeakerIcon, MessageCircleIcon, UserCheckIcon, ClockIcon } from 'lucide-react'
 import NoNotificationsFound from '../components/NoNotificationsFound'
+import useAuthUser from '../hooks/useAuthUser'
 
 function NotificationPage() {
+  const { isAuthenticated } = useAuthUser();
   const queryClient = useQueryClient()
 
-   const { data: friendRequests = { incomingRequests: [], acceptedRequests: [] }, isLoading } = useQuery({
+  const { data: friendRequests = { incomingRequests: [], acceptedRequests: [] }, isLoading } = useQuery({
     queryKey: ['friendRequest'],
     queryFn: getFriendRequests,
+    enabled: isAuthenticated, // Only run when authenticated
     retry: false,                 // stop automatic retries (caused 3 repeated errors)
     refetchOnWindowFocus: false,  // optional: reduce repeated fetching
   })
@@ -25,6 +28,11 @@ function NotificationPage() {
 
   const incomingRequest = friendRequests?.incomingRequests ?? []
   const acceptedRequest = friendRequests?.acceptedRequests ?? []
+
+  // Don't render anything if not authenticated (should not happen due to route protection)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className='p-4 sm:p-6 lg:p-8'>

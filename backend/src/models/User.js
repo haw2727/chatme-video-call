@@ -7,10 +7,9 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true, minlength: 8 },
     bio: { type: String, default: "" },
     profilePic: { type: String, default: "" },
-    nativeLanguage: { type: String, default: "" },
-    learningLanguage: { type: String, default: "" },
     location: { type: String, default: "" },
-    isOnboarded: { type: Boolean, default: false },
+    isOnline: { type: Boolean, default: false },
+    lastSeen: { type: Date, default: Date.now },
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
 }, { timestamps: true });
 

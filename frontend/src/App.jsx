@@ -6,88 +6,100 @@ import SignUpPage from './pages/SignUpPage.jsx';
 import ChatPage from './pages/ChatPage.jsx';
 import CallPage from './pages/CallPage.jsx';
 import NotificationPage from './pages/NotificationPage.jsx';
-import OnboardingPage from './pages/OnboardingPage.jsx';
+import SettingsPage from './pages/SettingsPage.jsx';
+import GroupChatPage from './pages/GroupChatPage.jsx';
 
 import { Toaster } from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
 import PageLoader from './components/PageLoader.jsx';
 import useAuthUser from './hooks/useAuthUser.js';
-import  Layout   from "./components/Layout.jsx";
+import ModernLayout from "./components/ModernLayout.jsx";
 import { useThemeStore } from './store/useThemeStore.js';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 function App() {
-    //tanstack query client
-    const {isLoading, authUser, error} = useAuthUser();
-    const {theme} = useThemeStore();
+  //tanstack query client
+  const { isLoading, authUser, error, isAuthenticated } = useAuthUser();
+  const { theme } = useThemeStore();
 
-    const isAuthenticated = Boolean(authUser);
-    const isOnboarded = authUser?.isOnboarded;
+  // Show loading while checking authentication status
+  if (isLoading) {
+    return <PageLoader />;
+  }
 
-    console.log(error);
+  // If there's an error and it's not a 401 (which is expected when not logged in)
+  // Also ignore network errors which happen when backend is starting up
+  if (error && error.response?.status !== 401 && error.code !== 'ERR_NETWORK') {
+    console.error('Authentication error:', error);
+  }
 
-    if (isLoading) {
-      // while we don't know the auth status, render a loading placeholder to avoid immediate redirects
-      return <PageLoader />;
-    }
   return (
-  <div className="h-screen "data-theme={theme}>
-     {/*  <button className="btn btn-primary" onClick={() => toast.success("Toaster created!")}>create a toaster</button> */}
-      <Routes>
-        <Route
-          path="/"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout  showSidebar={true}>
-                <HomePage />
-              </Layout>
-            ) :  (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-           
-          }
-      />
-        <Route path="/signup" element={!isAuthenticated ? <SignUpPage /> : <Navigate to={isOnboarded ? "/" : "/onboarding"} />} />
-        <Route path="/login" 
-        element={
-          !isAuthenticated ? <LogInPage /> : <Navigate to={isOnboarded ? "/":"/onboarding"} />
-          } 
-        />
-        <Route path="/chat/:id" element={
-          isAuthenticated && isOnboarded ? (
-            <Layout showSidebar={false} >
-              <ChatPage />
-            </Layout>
-          ) : (
-            <Navigate to={isAuthenticated ? "/login" : "/onboarding"} />
-          )
-        } 
-      />
-        
-        <Route path="/call/:id" element={
-          isAuthenticated && isOnboarded ? (
-            <CallPage />
-          ) : (
-            <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-          )
-        } />
-        <Route 
-        path="/notifications" 
-            element={isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true} >
-                 <NotificationPage/>
-              </Layout>
+    <ErrorBoundary>
+      <div className="h-screen" data-theme={theme}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? (
+                <ModernLayout showSidebar={true}>
+                  <HomePage />
+                </ModernLayout>
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route path="/signup" element={!isAuthenticated ? <SignUpPage /> : <Navigate to="/" />} />
+          <Route path="/login" element={!isAuthenticated ? <LogInPage /> : <Navigate to="/" />} />
+          <Route path="/chat/:id" element={
+            isAuthenticated ? (
+              <ModernLayout showSidebar={false}>
+                <ChatPage />
+              </ModernLayout>
             ) : (
-              <Navigate to={isAuthenticated ? "/login" : "/onboarding"} />
-            ) } />
-        <Route path="/onboarding" element={isAuthenticated ? (!isOnboarded ? (<OnboardingPage />
-          ) :( 
-          <Navigate to="/"/>)) :(<Navigate to="/login" />
-            
-          )} />
+              <Navigate to="/login" />
+            )
+          } />
+
+          <Route path="/call/:id" element={
+            isAuthenticated ? (
+              <CallPage />
+            ) : (
+              <Navigate to="/login" />
+            )
+          } />
+          <Route
+            path="/groups"
+            element={isAuthenticated ? (
+              <ModernLayout showSidebar={true}>
+                <GroupChatPage />
+              </ModernLayout>
+            ) : (
+              <Navigate to="/login" />
+            )} />
+          <Route
+            path="/notifications"
+            element={isAuthenticated ? (
+              <ModernLayout showSidebar={true}>
+                <NotificationPage />
+              </ModernLayout>
+            ) : (
+              <Navigate to="/login" />
+            )} />
+          <Route
+            path="/settings"
+            element={isAuthenticated ? (
+              <ModernLayout showSidebar={true}>
+                <SettingsPage />
+              </ModernLayout>
+            ) : (
+              <Navigate to="/login" />
+            )} />
           <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      <Toaster />
-    </div>
+        </Routes>
+        <Toaster />
+      </div>
+    </ErrorBoundary>
   );
 }
 

@@ -1,25 +1,37 @@
 import User from '../models/User.js';
 import FriendRequest from '../models/friendRequest.js';
 export async function getRecommendedFriends(req, res) {
-    try {
-        const currentUserId = req.user._id;
-        const currentUser = req.user;
+  try {
+    const currentUserId = req.user._id;
+    const currentUser = req.user;
 
-        const recommendedUsers = await User.find({
-            $and: [
-                { _id: { $ne: currentUserId } }, // Exclude current user
-                { _id: { $nin: currentUser.friends } }, // Exclude existing friends
-                { isOnboarded: true } // Only include onboarded users
-            ]
-        }).select('-password').limit(10); // Limit to 10 recommendations
+    // Get all pending friend requests to exclude users we've already sent requests to
+    const pendingRequests = await FriendRequest.find({
+      $or: [
+        { from: currentUserId, status: 'pending' },
+        { to: currentUserId, status: 'pending' }
+      ]
+    });
 
-        res.status(200).json({ success: true, data: recommendedUsers });
-    } catch (error) {
-        console.error('Error fetching recommended friends:', error.message);
-        res.status(500).json({ success: false, message: 'Internal server error' });
-    }
+    // Extract user IDs from pending requests
+    const pendingUserIds = pendingRequests.map(req =>
+      req.from.toString() === currentUserId.toString() ? req.to : req.from
+    );
 
-} 
+    const recommendedUsers = await User.find({
+      $and: [
+        { _id: { $ne: currentUserId } }, // Exclude current user
+        { _id: { $nin: currentUser.friends } }, // Exclude existing friends
+        { _id: { $nin: pendingUserIds } } // Exclude users with pending requests
+      ]
+    }).select('-password').limit(50); // Increased limit to 50 users
+
+    res.status(200).json({ success: true, data: recommendedUsers });
+  } catch (error) {
+    console.error('Error fetching recommended friends:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}
 
 export async function getMyFriends(req, res) {
   try {
@@ -31,7 +43,7 @@ export async function getMyFriends(req, res) {
     // Populate friends with explicit include list (do NOT mix include + exclude)
     const user = await User.findById(userId).populate({
       path: 'friends',
-      select: '_id fullName profilePic nativeLanguage learningLanguage bio', // explicit fields
+      select: '_id fullName profilePic bio isOnline lastSeen', // explicit fields
     })
 
     const friends = Array.isArray(user?.friends) ? user.friends : []
@@ -134,7 +146,7 @@ export async function getFriendRequests(req, res) {
     const incomingRequests = await FriendRequest.find({
       to: userId,
       status: 'pending',
-    }).populate('from', 'fullName profilePic nativeLanguage learningLanguage');
+    }).populate('from', 'fullName profilePic bio');
 
     // Accepted requests involving the user (either direction)
     const acceptedRequests = await FriendRequest.find({
@@ -142,7 +154,7 @@ export async function getFriendRequests(req, res) {
         { status: 'accepted' },
         { $or: [{ from: userId }, { to: userId }] },
       ],
-    }).populate('from to', 'fullName profilePic nativeLanguage learningLanguage');
+    }).populate('from to', 'fullName profilePic bio');
 
     return res.status(200).json({ success: true, incomingRequests, acceptedRequests });
   } catch (error) {
@@ -161,7 +173,7 @@ export async function getOutgoingFriendRequests(req, res) {
     const outgoingRequests = await FriendRequest.find({
       from: userId,
       status: 'pending',
-    }).populate('to', 'fullName profilePic nativeLanguage learningLanguage');
+    }).populate('to', 'fullName profilePic bio');
 
     return res.status(200).json({ success: true, outgoingRequests });
   } catch (error) {

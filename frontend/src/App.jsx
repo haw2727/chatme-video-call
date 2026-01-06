@@ -5,22 +5,28 @@ import LogInPage from './pages/LogInPage.jsx';
 import SignUpPage from './pages/SignUpPage.jsx';
 import ChatPage from './pages/ChatPage.jsx';
 import CallPage from './pages/CallPage.jsx';
+import CallSelectionPage from './pages/CallSelectionPage.jsx';
 import NotificationPage from './pages/NotificationPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import GroupChatPage from './pages/GroupChatPage.jsx';
+import GroupChatInterface from './pages/GroupChatInterface.jsx';
+import SimpleGroupChat from './components/SimpleGroupChat.jsx';
 
 import { Toaster } from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
 import PageLoader from './components/PageLoader.jsx';
 import useAuthUser from './hooks/useAuthUser.js';
+import useWebSocket from './hooks/useWebSocket.js';
 import ModernLayout from "./components/ModernLayout.jsx";
 import { useThemeStore } from './store/useThemeStore.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import IncomingCallModal from './components/IncomingCallModal.jsx';
 
 function App() {
   //tanstack query client
   const { isLoading, authUser, error, isAuthenticated } = useAuthUser();
   const { theme } = useThemeStore();
+  const { incomingCall, clearIncomingCall } = useWebSocket();
 
   // Show loading while checking authentication status
   if (isLoading) {
@@ -68,12 +74,30 @@ function App() {
               <Navigate to="/login" />
             )
           } />
+
+          <Route path="/call-selection" element={
+            isAuthenticated ? (
+              <ModernLayout showSidebar={false}>
+                <CallSelectionPage />
+              </ModernLayout>
+            ) : (
+              <Navigate to="/login" />
+            )
+          } />
           <Route
             path="/groups"
             element={isAuthenticated ? (
               <ModernLayout showSidebar={true}>
                 <GroupChatPage />
               </ModernLayout>
+            ) : (
+              <Navigate to="/login" />
+            )} />
+
+          <Route
+            path="/groups/:groupId"
+            element={isAuthenticated ? (
+              <GroupChatInterface />
             ) : (
               <Navigate to="/login" />
             )} />
@@ -98,6 +122,14 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Toaster />
+
+        {/* Incoming Call Modal */}
+        {incomingCall && (
+          <IncomingCallModal
+            incomingCall={incomingCall}
+            onClose={clearIncomingCall}
+          />
+        )}
       </div>
     </ErrorBoundary>
   );

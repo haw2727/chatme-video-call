@@ -5,12 +5,17 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.route.js';
 import chatRoutes from './routes/chat.route.js';
 import groupRoutes from './routes/group.route.js';
+import callRoutes from './routes/call.route.js';
+import groupCallRoutes from './routes/groupCall.route.js';
 import { connectDB } from './lib/db.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
 import http from 'http';
 import { WebSocketServer } from 'ws';
+import { setUserConnection, removeUserConnection } from './controllers/callController.js';
+import jwt from 'jsonwebtoken';
+import User from './models/User.js';
 
 const app = express();
 const PORT = process.env.PORT || 5002;
@@ -31,6 +36,8 @@ connectDB()
     app.use('/api/users', userRoutes);
     app.use('/api/stream', chatRoutes);
     app.use('/api/groups', groupRoutes);
+    app.use('/api/calls', callRoutes);
+    app.use('/api/group-calls', groupCallRoutes);
     app.get('/api/health', (req, res) => res.json({ ok: true }));
 
     // serve frontend (safe catch-all)
@@ -50,18 +57,89 @@ connectDB()
     // WebSocket server (noServer: true) — handle upgrades explicitly
     const wss = new WebSocketServer({ noServer: true });
 
-    // simple connection handler — adjust behavior as needed
-    wss.on('connection', (ws, req) => {
-      console.log('WebSocket connected:', req.url);
-      // respond to ping/handshake or perform simple echo
+    // Enhanced WebSocket connection handler with authentication
+    wss.on('connection', async (ws, req) => {
+      console.log('WebSocket connection attempt:', req.url);
+
+      let userId = null;
+
+      try {
+        // Extract token from query params or headers
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const token = url.searchParams.get('token') || req.headers.authorization?.replace('Bearer ', '');
+
+        if (token) {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          const user = await User.findById(decoded.userId).select('-password');
+
+          if (user) {
+            userId = user._id.toString();
+            setUserConnection(userId, ws);
+
+            // Send connection confirmation
+            ws.send(JSON.stringify({
+              type: 'connected',
+              userId,
+              message: 'WebSocket authenticated successfully'
+            }));
+          }
+        }
+
+        if (!userId) {
+          ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Authentication required for WebSocket connection'
+          }));
+          ws.close();
+          return;
+        }
+      } catch (error) {
+        console.error('WebSocket authentication error:', error);
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Invalid authentication token'
+        }));
+        ws.close();
+        return;
+      }
+
+      // Handle incoming messages
       ws.on('message', (message) => {
-        console.log('WS message:', message.toString());
-        // optional: echo back
-        // ws.send(message);
+        try {
+          const data = JSON.parse(message.toString());
+          console.log(`WS message from ${userId}:`, data);
+
+          // Handle different message types
+          switch (data.type) {
+            case 'ping':
+              ws.send(JSON.stringify({ type: 'pong', timestamp: new Date() }));
+              break;
+            case 'heartbeat':
+              // Keep connection alive
+              break;
+            default:
+              console.log('Unknown WebSocket message type:', data.type);
+          }
+        } catch (error) {
+          console.error('Error processing WebSocket message:', error);
+        }
       });
-      ws.on('close', () => console.log('WebSocket closed:', req.url));
-      // optional: send initial message so client knows connection succeeded
-      try { ws.send(JSON.stringify({ type: 'connected' })); } catch (e) { }
+
+      // Handle connection close
+      ws.on('close', () => {
+        console.log(`WebSocket closed for user: ${userId}`);
+        if (userId) {
+          removeUserConnection(userId);
+        }
+      });
+
+      // Handle errors
+      ws.on('error', (error) => {
+        console.error(`WebSocket error for user ${userId}:`, error);
+        if (userId) {
+          removeUserConnection(userId);
+        }
+      });
     });
 
     // handle upgrade requests: allow /ws (and /ws/*), reject others

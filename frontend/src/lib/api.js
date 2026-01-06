@@ -173,3 +173,147 @@ export const getStreamToken = async (targetUserId = null) => {
     return null;
   }
 };
+
+// Call Management APIs
+export const initiateCall = async (participants, type = 'video') => {
+  try {
+    const response = await axiosInstance.post('/calls/initiate', {
+      participants,
+      type
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error initiating call:', error);
+    throw error;
+  }
+};
+
+export const respondToCall = async (callId, response) => {
+  try {
+    const res = await axiosInstance.post('/calls/respond', {
+      callId,
+      response
+    });
+    return res.data;
+  } catch (error) {
+    console.error('Error responding to call:', error);
+    throw error;
+  }
+};
+
+export const getCallDetails = async (callId) => {
+  try {
+    const response = await silentAxiosInstance.get(`/calls/${callId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting call details:', error);
+    throw error;
+  }
+};
+
+export const endCall = async (callId) => {
+  try {
+    const response = await axiosInstance.post(`/calls/${callId}/end`);
+    return response.data;
+  } catch (error) {
+    console.error('Error ending call:', error);
+    throw error;
+  }
+};
+
+export const getUserActiveCalls = async () => {
+  try {
+    const response = await silentAxiosInstance.get('/calls/user/active');
+    return response.data;
+  } catch (error) {
+    // Don't log 401 errors as they're expected when user is not logged in
+    if (error.response?.status !== 401) {
+      console.error('Error getting active calls:', error);
+    }
+    return { calls: [] };
+  }
+};
+
+// Group Management APIs
+export const createGroup = async (groupData) => {
+  try {
+    const response = await axiosInstance.post('/groups/create', groupData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating group:', error);
+    throw error;
+  }
+};
+
+export const getUserGroups = async () => {
+  try {
+    const response = await silentAxiosInstance.get('/groups/my-groups');
+    return response.data;
+  } catch (error) {
+    // Don't log 401 errors as they're expected when user is not logged in
+    if (error.response?.status !== 401) {
+      console.error('Error getting user groups:', error);
+    }
+    return { groups: [] };
+  }
+};
+
+export const addMemberToGroup = async (groupId, userId) => {
+  try {
+    const response = await axiosInstance.post(`/groups/${groupId}/add-member`, { userId });
+    return response.data;
+  } catch (error) {
+    console.error('Error adding member to group:', error);
+    throw error;
+  }
+};
+
+export const leaveGroup = async (groupId) => {
+  try {
+    const response = await axiosInstance.delete(`/groups/${groupId}/leave`);
+    return response.data;
+  } catch (error) {
+    console.error('Error leaving group:', error);
+    throw error;
+  }
+};
+// Group Call APIs
+export const startGroupCall = async (groupId, callType, callId) => {
+  try {
+    const response = await axiosInstance.post('/group-calls/start', {
+      groupId,
+      callType,
+      callId
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error starting group call:', error);
+    throw error;
+  }
+};
+
+export const endGroupCall = async (groupId, callId) => {
+  try {
+    const response = await axiosInstance.post('/group-calls/end', {
+      groupId,
+      callId
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error ending group call:', error);
+    throw error;
+  }
+};
+
+export const joinGroupCall = async (groupId, callId) => {
+  try {
+    const response = await axiosInstance.post('/group-calls/join', {
+      groupId,
+      callId
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error joining group call:', error);
+    throw error;
+  }
+};

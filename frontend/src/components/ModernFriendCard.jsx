@@ -1,18 +1,42 @@
 import React from 'react';
 import { MessageCircle, Video, Phone, MapPin, Globe, Heart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { initiateCall } from '../lib/api';
+import { showToast } from './Toast';
 
 const ModernFriendCard = ({ friend, onVideoCall, onVoiceCall }) => {
-    const handleVideoCall = (e) => {
+    const navigate = useNavigate();
+
+    const handleVideoCall = async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        onVideoCall?.(friend._id);
+
+        try {
+            const response = await initiateCall([friend._id], 'video');
+            if (response.success) {
+                showToast.success('Video call invitation sent!');
+                navigate(`/call/${response.callId}?type=video&initiated=true`);
+            }
+        } catch (error) {
+            console.error('Error starting video call:', error);
+            showToast.error('Failed to start video call');
+        }
     };
 
-    const handleVoiceCall = (e) => {
+    const handleVoiceCall = async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        onVoiceCall?.(friend._id);
+
+        try {
+            const response = await initiateCall([friend._id], 'voice');
+            if (response.success) {
+                showToast.success('Voice call invitation sent!');
+                navigate(`/call/${response.callId}?type=voice&initiated=true`);
+            }
+        } catch (error) {
+            console.error('Error starting voice call:', error);
+            showToast.error('Failed to start voice call');
+        }
     };
 
     return (

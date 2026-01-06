@@ -4,11 +4,13 @@ import { useThemeStore } from '../../store/useThemeStore';
 import useAuthUser from '../../hooks/useAuthUser';
 import useLogout from '../../hooks/useLogout';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useModal } from '../../contexts/ModalContext';
 
 import SidebarHeader from './SidebarHeader';
 import SidebarSearch from './SidebarSearch';
 import SidebarNavigation from './SidebarNavigation';
 import SidebarQuickActions from './SidebarQuickActions';
+import SidebarGroups from './SidebarGroups';
 import SidebarFooter from './SidebarFooter';
 
 import { navigationItems, quickActions, availableThemes, sidebarActions } from '../../config/sidebarConfig';
@@ -19,6 +21,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     const { authUser } = useAuthUser();
     const { mutate: logoutMutation, isPending: isLoggingOut } = useLogout();
     const { totalNotifications } = useNotifications();
+    const { openModal } = useModal();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [showThemeSelector, setShowThemeSelector] = useState(false);
@@ -55,8 +58,15 @@ const Sidebar = ({ isOpen, onClose }) => {
 
     // Action handler for quick actions
     const handleAction = (actionType) => {
-        if (sidebarActions[actionType]) {
-            sidebarActions[actionType]();
+        if (actionType === 'newChat') {
+            openModal('newChat');
+        } else if (actionType === 'createGroup') {
+            openModal('createGroup');
+        } else if (sidebarActions[actionType]) {
+            sidebarActions[actionType](() => {
+                if (actionType === 'newChat') openModal('newChat');
+                if (actionType === 'createGroup') openModal('createGroup');
+            });
         }
         onClose?.();
     };
@@ -115,6 +125,11 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <SidebarQuickActions
                     actions={quickActions}
                     onActionClick={handleAction}
+                />
+
+                {/* Groups Section */}
+                <SidebarGroups
+                    onItemClick={onClose}
                 />
 
                 {/* Footer Section */}

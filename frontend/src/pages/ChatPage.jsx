@@ -127,23 +127,13 @@ function ChatPage() {
   }, [tokenData, authUser, targetUserId]);
 
   const handleVideoCall = () => {
-    if (channel) {
-      const callUrl = `${window.location.origin}/call/${channel.id}`;
-      channel.sendMessage({
-        text: `📹 Video call started. Join here: ${callUrl}`,
-      });
-      toast.success("Video call link sent!");
-      window.location.href = callUrl;
-    }
+    // Navigate to call selection with video call preset
+    window.location.href = '/call-selection?type=video&preset=' + targetUserId;
   }
 
   const handleVoiceCall = () => {
-    if (channel) {
-      channel.sendMessage({
-        text: `📞 Voice call started`,
-      });
-      toast.success("Voice call started!");
-    }
+    // Navigate to call selection with voice call preset
+    window.location.href = '/call-selection?type=voice&preset=' + targetUserId;
   }
 
   const handleSendMessage = () => {
@@ -348,8 +338,8 @@ function ChatPage() {
               onClick={handleSendMessage}
               disabled={!message.trim()}
               className={`btn btn-circle transition-all duration-200 ${message.trim()
-                  ? 'btn-primary shadow-lg hover:shadow-xl'
-                  : 'btn-disabled'
+                ? 'btn-primary shadow-lg hover:shadow-xl'
+                : 'btn-disabled'
                 }`}
             >
               <Send className='w-5 h-5' />

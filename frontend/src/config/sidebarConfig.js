@@ -44,24 +44,17 @@ export const quickActions = [
         type: 'action'
     },
     {
-        name: 'Video Call',
-        icon: 'Video',
-        description: 'Start video chat',
-        action: 'videoCall',
-        type: 'action'
-    },
-    {
-        name: 'Voice Call',
+        name: 'Start Call',
         icon: 'Phone',
-        description: 'Start voice chat',
-        action: 'voiceCall',
-        type: 'action'
+        description: 'Voice or video call',
+        href: '/call-selection',
+        type: 'link'
     },
     {
-        name: 'Add Friends',
-        icon: 'UserPlus',
-        description: 'Find new people',
-        href: '/notifications',
+        name: 'Home',
+        icon: 'Home',
+        description: 'Back to home',
+        href: '/',
         type: 'link'
     }
 ];
@@ -119,19 +112,18 @@ export const searchFilters = {
 
 // Sidebar Action Handlers
 export const sidebarActions = {
-    newChat: () => {
-        console.log('Starting new chat...');
-        // TODO: Implement new chat functionality
+    newChat: (openNewChatModal) => {
+        console.log('Opening new chat modal...');
+        if (openNewChatModal) {
+            openNewChatModal();
+        }
     },
 
-    videoCall: () => {
-        console.log('Starting video call...');
-        // TODO: Implement video call functionality
-    },
-
-    voiceCall: () => {
-        console.log('Starting voice call...');
-        // TODO: Implement voice call functionality
+    createGroup: (openCreateGroupModal) => {
+        console.log('Opening create group modal...');
+        if (openCreateGroupModal) {
+            openCreateGroupModal();
+        }
     },
 
     search: (query, filters) => {

@@ -4,10 +4,10 @@ import {
     MessageSquare,
     Video,
     Phone,
-    UserPlus,
     Plus,
     Zap,
-    Send
+    Send,
+    Home
 } from 'lucide-react';
 
 // Icon mapping
@@ -15,10 +15,10 @@ const iconMap = {
     MessageSquare,
     Video,
     Phone,
-    UserPlus,
     Plus,
     Zap,
-    Send
+    Send,
+    Home
 };
 
 const SidebarQuickActions = ({ actions, onActionClick }) => {
@@ -82,18 +82,18 @@ const SidebarQuickActions = ({ actions, onActionClick }) => {
                 <div className="grid grid-cols-2 gap-2">
                     <button
                         className="btn btn-sm btn-ghost justify-start"
-                        onClick={() => onActionClick?.('newChat')}
+                        onClick={() => onActionClick?.('createGroup')}
                     >
                         <Plus className="w-4 h-4" />
                         Create
                     </button>
-                    <button
+                    <Link
+                        to="/"
                         className="btn btn-sm btn-ghost justify-start"
-                        onClick={() => onActionClick?.('search')}
                     >
-                        <Zap className="w-4 h-4" />
-                        Quick
-                    </button>
+                        <Home className="w-4 h-4" />
+                        Home
+                    </Link>
                 </div>
             </div>
         </div>

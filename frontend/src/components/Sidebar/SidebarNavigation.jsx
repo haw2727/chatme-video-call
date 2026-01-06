@@ -79,8 +79,8 @@ const SidebarNavigation = ({ items, isActive, onItemClick }) => {
                                     )}
                                 </div>
                                 <p className={`text-xs truncate transition-opacity ${active
-                                        ? 'text-primary-content/80 opacity-100'
-                                        : 'text-base-content/60 opacity-70 group-hover:opacity-100'
+                                    ? 'text-primary-content/80 opacity-100'
+                                    : 'text-base-content/60 opacity-70 group-hover:opacity-100'
                                     }`}>
                                     {item.description}
                                 </p>
@@ -93,20 +93,6 @@ const SidebarNavigation = ({ items, isActive, onItemClick }) => {
                         </Link>
                     );
                 })}
-            </div>
-
-            {/* Recent Chats Section */}
-            <div className="py-2 border-t border-base-300/50">
-                <h3 className="px-4 text-xs font-semibold text-base-content/60 uppercase tracking-wider mb-3">
-                    Recent Chats
-                </h3>
-
-                {/* Placeholder for recent chats */}
-                <div className="px-4 py-8 text-center text-base-content/40">
-                    <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No recent chats</p>
-                    <p className="text-xs">Start a conversation to see it here</p>
-                </div>
             </div>
         </nav>
     );

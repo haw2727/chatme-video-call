@@ -5,6 +5,8 @@ import {
   getMyFriends,
   sendFriendRequest,
   acceptFriendRequest,
+  rejectFriendRequest,
+  cancelFriendRequest,
   getOutgoingFriendRequests,
   getFriendRequests, // added import
   // ...other controllers...
@@ -16,6 +18,8 @@ router.get('/friends', protectRoute, getMyFriends);
 router.get('/recommended', protectRoute, getRecommendedFriends);
 router.post('/friends-request/:id', protectRoute, sendFriendRequest);
 router.put('/friends-request/:id/accept', protectRoute, acceptFriendRequest);
+router.put('/friends-request/:id/reject', protectRoute, rejectFriendRequest);
+router.delete('/friends-request/:id/cancel', protectRoute, cancelFriendRequest);
 
 // existing outgoing requests route
 router.get('/outgoing-friends-requests', protectRoute, getOutgoingFriendRequests);

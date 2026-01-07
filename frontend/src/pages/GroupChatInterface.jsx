@@ -1,42 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getUserGroups, getStreamToken } from '../lib/api';
 import useAuthUser from '../hooks/useAuthUser';
+import { useCallControls } from '../hooks/useCallControls';
 import {
     ArrowLeft,
-    Send,
-    Smile,
-    Paperclip,
     Phone,
     Video,
     Users,
     Settings,
     Crown,
-    Mic,
-    MicOff,
-    VideoOff,
-    PhoneOff,
-    UserPlus,
-    MoreVertical
+    PhoneOff
 } from 'lucide-react';
 import { showToast } from '../components/Toast';
-import CallInviteMessage from '../components/CallInviteMessage';
-import CustomMessageRenderer from '../components/CustomMessageRenderer';
+import CallInterface from '../components/CallInterface';
+import MembersSidebar from '../components/MembersSidebar';
 
 // Stream Video imports
 import {
     StreamVideo,
     StreamVideoClient,
-    StreamCall,
-    SpeakerLayout,
-    CallControls,
-    StreamTheme,
-    useCallStateHooks,
-    CallingState
+    StreamCall
 } from '@stream-io/video-react-sdk';
 
-// Stream Chat imports - Fixed
+// Stream Chat imports
 import { StreamChat } from 'stream-chat';
 import {
     Chat,
@@ -58,28 +46,17 @@ const GroupChatInterface = () => {
     const { groupId } = useParams();
     const navigate = useNavigate();
     const { authUser, isAuthenticated } = useAuthUser();
-    const queryClient = useQueryClient();
-
-    // Check if Stream API key is available
-    if (!STREAM_API_KEY) {
-        console.error('VITE_STREAM_API_KEY is not configured');
-    }
 
     const [chatClient, setChatClient] = useState(null);
     const [videoClient, setVideoClient] = useState(null);
     const [channel, setChannel] = useState(null);
-    const [call, setCall] = useState(null);
-    const [callMode, setCallMode] = useState(null); // 'voice' | 'video' | null
-    const [activeCallId, setActiveCallId] = useState(null); // Store the current call ID
     const [isConnecting, setIsConnecting] = useState(true);
     const [showMembers, setShowMembers] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-
-    // Check if there's an active call by looking at recent messages
     const [detectedCallMode, setDetectedCallMode] = useState(null);
     const [detectedCallId, setDetectedCallId] = useState(null);
 
-    // Get user groups to find the specific group
+    // Get user groups
     const { data: groupsData, isLoading: loadingGroups } = useQuery({
         queryKey: ["userGroups"],
         queryFn: getUserGroups,
@@ -96,15 +73,25 @@ const GroupChatInterface = () => {
     const groups = groupsData?.groups || [];
     const currentGroup = groups.find(g => g._id === groupId);
 
+    // Initialize call controls
+    const {
+        call,
+        callMode,
+        activeCallId,
+        startVoiceCall,
+        startVideoCall,
+        endCall,
+        joinCall
+    } = useCallControls(videoClient, currentGroup, authUser, channel);
+
     // Monitor chat messages for call status
     useEffect(() => {
         if (!channel || !currentGroup) return;
 
         const checkForActiveCalls = () => {
             const messages = channel.state.messages || [];
-            const recentMessages = messages.slice(-10); // Check last 10 messages
+            const recentMessages = messages.slice(-10);
 
-            // Look for call start messages
             const callStartMessage = recentMessages
                 .reverse()
                 .find(msg =>
@@ -114,7 +101,12 @@ const GroupChatInterface = () => {
                     !msg.text?.includes('ended')
                 );
 
-            if (callStartMessage) {
+            const endMessage = recentMessages.find(msg =>
+                msg.text?.includes('ended') ||
+                msg.text?.includes('Call ended')
+            );
+
+            if (callStartMessage && (!endMessage || callStartMessage.created_at > endMessage.created_at)) {
                 if (callStartMessage.text.includes('voice call')) {
                     setDetectedCallMode('voice');
                     setDetectedCallId(`group-voice-${currentGroup._id}`);
@@ -123,27 +115,13 @@ const GroupChatInterface = () => {
                     setDetectedCallId(`group-video-${currentGroup._id}`);
                 }
             } else {
-                // Check if there's an end call message more recent than start
-                const endMessage = recentMessages.find(msg =>
-                    msg.text?.includes('ended') ||
-                    msg.text?.includes('Call ended')
-                );
-
-                if (endMessage) {
-                    setDetectedCallMode(null);
-                    setDetectedCallId(null);
-                }
+                setDetectedCallMode(null);
+                setDetectedCallId(null);
             }
         };
 
-        // Check initially
         checkForActiveCalls();
-
-        // Listen for new messages
-        const handleNewMessage = () => {
-            checkForActiveCalls();
-        };
-
+        const handleNewMessage = () => checkForActiveCalls();
         channel.on('message.new', handleNewMessage);
 
         return () => {
@@ -154,15 +132,6 @@ const GroupChatInterface = () => {
     // Use detected call mode if user is not in a call
     const displayCallMode = call ? callMode : detectedCallMode;
     const displayCallId = call ? activeCallId : detectedCallId;
-
-    // Debug logging
-    console.log('GroupChatInterface Debug:', {
-        groupId,
-        groupsCount: groups.length,
-        currentGroup: currentGroup ? currentGroup.name : 'Not found',
-        isAuthenticated,
-        tokenData: !!tokenData
-    });
 
     const isUserAdmin = (group) => {
         return group?.admins?.some(admin => admin._id === authUser?._id) ||
@@ -192,30 +161,31 @@ const GroupChatInterface = () => {
                     image: authUser.profilePic,
                 };
 
-                // Initialize Chat Client - Fixed for correct version
-                console.log('Initializing StreamChat with API key:', STREAM_API_KEY ? 'Present' : 'Missing');
-                console.log('User data:', user);
-                console.log('Token data:', tokenData ? 'Present' : 'Missing');
-
+                // Initialize Chat Client
                 const chatClient = new StreamChat(STREAM_API_KEY);
-                if (!chatClient) {
-                    throw new Error('Failed to create StreamChat instance');
-                }
-
-                console.log('Connecting user to StreamChat...');
                 await chatClient.connectUser(user, tokenData);
-                console.log('StreamChat user connected successfully');
                 chatClientInstance = chatClient;
 
                 // Get or create channel
-                console.log('Creating channel for group:', currentGroup.name, 'with ID:', currentGroup.streamChannelId);
+                if (!currentGroup.streamChannelId) {
+                    throw new Error('Group does not have a valid Stream channel ID');
+                }
+
                 const channel = chatClient.channel('messaging', currentGroup.streamChannelId, {
                     name: currentGroup.name,
                     members: currentGroup.members.map(m => m._id),
                 });
-                console.log('Watching channel...');
-                await channel.watch();
-                console.log('Channel ready:', channel.id);
+
+                try {
+                    await channel.watch();
+                } catch (channelError) {
+                    if (channelError.code === 16) {
+                        await channel.create();
+                        await channel.watch();
+                    } else {
+                        throw channelError;
+                    }
+                }
 
                 // Initialize Video Client
                 const videoClient = new StreamVideoClient({
@@ -234,8 +204,10 @@ const GroupChatInterface = () => {
 
             } catch (error) {
                 console.error('Error initializing clients:', error);
-                showToast.error('Failed to connect to chat. Please try again.');
-                setIsConnecting(false);
+                if (!cancelled) {
+                    showToast.error('Failed to connect to chat. Please try again.');
+                    setIsConnecting(false);
+                }
             }
         };
 
@@ -249,210 +221,29 @@ const GroupChatInterface = () => {
                     if (videoClientInstance?.disconnect) await videoClientInstance.disconnect();
                     if (chatClientInstance?.disconnectUser) await chatClientInstance.disconnectUser();
                 } catch (err) {
-                    console.warn('Error during cleanup', err);
+                    console.warn('Error during cleanup (this is normal during navigation):', err);
                 } finally {
                     setChatClient(null);
                     setVideoClient(null);
                     setChannel(null);
-                    setCall(null);
                 }
             })();
         };
-    }, [authUser, tokenData, currentGroup]);
-
-    const startVoiceCall = async () => {
-        if (!videoClient || !currentGroup) {
-            showToast.error('Video client or group not available');
-            console.error('Missing requirements:', { videoClient: !!videoClient, currentGroup: !!currentGroup });
-            return;
-        }
-
-        // Check if user is admin
-        if (!isUserAdmin(currentGroup)) {
-            showToast.error('Only group admins can start calls');
-            return;
-        }
-
-        try {
-            console.log('Starting voice call...');
-            // Use a simple, predictable call ID that all members can use
-            const callId = `group-voice-${currentGroup._id}`;
-            console.log('Call ID:', callId);
-
-            // Create call instance
-            const callInstance = videoClient.call('default', callId);
-            console.log('Call instance created:', !!callInstance);
-
-            // Join the call with simpler settings
-            console.log('Joining call...');
-            await callInstance.join({
-                create: true,
-                data: {
-                    members: currentGroup.members.map(m => ({ user_id: m._id }))
-                }
-            });
-            console.log('Call joined successfully');
-
-            // Disable camera for voice call
-            if (callInstance.camera) {
-                await callInstance.camera.disable();
-                console.log('Camera disabled');
-            }
-
-            // Send simple chat message notification
-            if (channel) {
-                try {
-                    await channel.sendMessage({
-                        text: `🎤 ${authUser.fullName} started a group voice call! Click "Join Call" in the header to join.`,
-                    });
-                    console.log('Chat notification sent');
-                } catch (chatError) {
-                    console.warn('Failed to send chat notification:', chatError);
-                }
-            }
-
-            setCall(callInstance);
-            setCallMode('voice');
-            setActiveCallId(callId); // Store the call ID
-            showToast.success(`Voice call started! Members can join from the chat message.`);
-            console.log('Voice call setup complete');
-
-        } catch (error) {
-            console.error('Error starting voice call:', error);
-            showToast.error(`Failed to start voice call: ${error.message}`);
-        }
-    };
-
-    const startVideoCall = async () => {
-        if (!videoClient || !currentGroup) {
-            showToast.error('Video client or group not available');
-            console.error('Missing requirements:', { videoClient: !!videoClient, currentGroup: !!currentGroup });
-            return;
-        }
-
-        // Check if user is admin
-        if (!isUserAdmin(currentGroup)) {
-            showToast.error('Only group admins can start calls');
-            return;
-        }
-
-        try {
-            console.log('Starting video call...');
-            // Use a simple, predictable call ID that all members can use
-            const callId = `group-video-${currentGroup._id}`;
-            console.log('Call ID:', callId);
-
-            // Create call instance
-            const callInstance = videoClient.call('default', callId);
-            console.log('Call instance created:', !!callInstance);
-
-            // Join the call with simpler settings
-            console.log('Joining video call...');
-            await callInstance.join({
-                create: true,
-                data: {
-                    members: currentGroup.members.map(m => ({ user_id: m._id }))
-                }
-            });
-            console.log('Video call joined successfully');
-
-            // Send simple chat message notification
-            if (channel) {
-                try {
-                    await channel.sendMessage({
-                        text: `📹 ${authUser.fullName} started a group video call! Click "Join Call" in the header to join.`,
-                    });
-                    console.log('Chat notification sent');
-                } catch (chatError) {
-                    console.warn('Failed to send chat notification:', chatError);
-                }
-            }
-
-            setCall(callInstance);
-            setCallMode('video');
-            setActiveCallId(callId); // Store the call ID
-            showToast.success(`Video call started! Members can join from the chat message.`);
-            console.log('Video call setup complete');
-
-        } catch (error) {
-            console.error('Error starting video call:', error);
-            showToast.error(`Failed to start video call: ${error.message}`);
-        }
-    };
-
-    const endCall = async () => {
-        if (call) {
-            try {
-                await call.leave();
-
-                // Send end call message to notify all members
-                if (channel) {
-                    await channel.sendMessage({
-                        text: `📞 ${authUser.fullName} ended the ${callMode} call`,
-                    });
-                }
-
-                setCall(null);
-                setCallMode(null);
-                setActiveCallId(null); // Clear the call ID
-                showToast.success('Call ended');
-            } catch (error) {
-                console.error('Error ending call:', error);
-            }
-        }
-    };
+    }, [authUser?._id, tokenData, currentGroup?._id, currentGroup?.streamChannelId]);
 
     // Handle joining a call from message button
     const handleJoinCall = async (callId, callType) => {
-        if (!videoClient) {
-            showToast.error('Video client not available');
-            return;
-        }
-
-        try {
-            console.log(`Joining ${callType} call:`, callId);
-
-            // Create call instance with the same ID
-            const callInstance = videoClient.call('default', callId);
-
-            // Join the existing call
-            await callInstance.join();
-            console.log('Successfully joined call');
-
-            // Set camera based on call type
-            if (callType === 'voice' && callInstance.camera) {
-                await callInstance.camera.disable();
-            }
-
-            setCall(callInstance);
-            setCallMode(callType);
-
-            // Send join notification
-            if (channel) {
-                await channel.sendMessage({
-                    text: `✅ ${authUser.fullName} joined the ${callType} call`,
-                });
-            }
-
-            showToast.success(`Joined ${callType} call successfully!`);
-        } catch (error) {
-            console.error('Error joining call:', error);
-            showToast.error(`Failed to join ${callType} call: ${error.message}`);
-        }
+        await joinCall(callId, callType);
     };
 
     // Handle rejecting a call from message button
     const handleRejectCall = async (callId, callType) => {
         try {
-            console.log(`Rejecting ${callType} call:`, callId);
-
-            // Send rejection notification
             if (channel) {
                 await channel.sendMessage({
                     text: `❌ ${authUser.fullName} declined the ${callType} call`,
                 });
             }
-
             showToast.info(`Declined ${callType} call`);
         } catch (error) {
             console.error('Error rejecting call:', error);
@@ -523,31 +314,31 @@ const GroupChatInterface = () => {
     return (
         <div className="h-screen flex flex-col bg-base-100">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-base-300 bg-base-200/50 backdrop-blur-sm">
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-base-300 bg-base-200/50 backdrop-blur-sm">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <button
                         onClick={() => navigate('/groups')}
-                        className="btn btn-ghost btn-circle btn-sm"
+                        className="btn btn-ghost btn-circle btn-sm flex-shrink-0"
                     >
-                        <ArrowLeft className="w-5 h-5" />
+                        <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
 
-                    <div className="flex items-center gap-3">
-                        <div className="avatar">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                                <Users className="w-5 h-5 text-white" />
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                        <div className="avatar flex-shrink-0">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                             </div>
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="font-bold text-lg">{currentGroup.name}</h1>
+                        <div className='min-w-0 flex-1'>
+                            <div className="flex items-center gap-1 sm:gap-2">
+                                <h1 className="font-bold text-base sm:text-lg truncate">{currentGroup.name}</h1>
                                 {isUserAdmin(currentGroup) && (
-                                    <Crown className="w-4 h-4 text-warning" title="Admin" />
+                                    <Crown className="w-3 h-3 sm:w-4 sm:h-4 text-warning flex-shrink-0" title="Admin" />
                                 )}
                             </div>
                             <p className="text-sm text-base-content/60">
                                 {currentGroup.members?.length || 0} members
-                                {displayCallMode && (
+                                {displayCallMode && !isUserAdmin(currentGroup) && (
                                     <>
                                         <span className="ml-2 text-success">
                                             • {displayCallMode === 'video' ? 'Video' : 'Voice'} call active
@@ -555,7 +346,6 @@ const GroupChatInterface = () => {
                                         {!call && displayCallId && (
                                             <button
                                                 onClick={async () => {
-                                                    // Join the active call using detected call ID
                                                     if (videoClient && displayCallId) {
                                                         try {
                                                             await handleJoinCall(displayCallId, displayCallMode);
@@ -571,6 +361,11 @@ const GroupChatInterface = () => {
                                             </button>
                                         )}
                                     </>
+                                )}
+                                {displayCallMode && isUserAdmin(currentGroup) && (
+                                    <span className="ml-2 text-success">
+                                        • {displayCallMode === 'video' ? 'Video' : 'Voice'} call active (You started this call)
+                                    </span>
                                 )}
                             </p>
                         </div>
@@ -661,23 +456,51 @@ const GroupChatInterface = () => {
                         <div className="flex-1 bg-gray-900 relative">
                             <StreamVideo client={videoClient}>
                                 <StreamCall call={call}>
-                                    <CallInterface callMode={callMode} onEndCall={endCall} />
+                                    <CallInterface
+                                        callMode={callMode}
+                                        onEndCall={endCall}
+                                        currentGroup={currentGroup}
+                                        authUser={authUser}
+                                        isAdmin={isUserAdmin(currentGroup)}
+                                    />
                                 </StreamCall>
                             </StreamVideo>
                         </div>
                     ) : (
                         /* Text Chat Interface */
                         <div className="flex-1">
-                            <Chat client={chatClient} theme="str-chat__theme-light">
-                                <Channel channel={channel}>
-                                    <Window>
-                                        <ChannelHeader />
-                                        <MessageList />
-                                        <MessageInput />
-                                    </Window>
-                                    <Thread />
-                                </Channel>
-                            </Chat>
+                            {chatClient && channel && chatClient.user ? (
+                                <Chat key={`${chatClient.userID}-${channel.id}`} client={chatClient} theme="str-chat__theme-light">
+                                    <Channel
+                                        channel={channel}
+                                        acceptedFiles={['image/*', 'video/*', 'audio/*', 'application/pdf', 'text/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/zip', 'application/x-rar-compressed']}
+                                        maxNumberOfFiles={5}
+                                        multipleUploads={true}
+                                    >
+                                        <Window>
+                                            <ChannelHeader />
+                                            <MessageList />
+                                            <MessageInput
+                                                focus
+                                                uploadButton={true}
+                                                fileUploadConfig={{
+                                                    multiple: true,
+                                                    maxNumberOfFiles: 5,
+                                                    maxFileSizeBytes: 10 * 1024 * 1024, // 10MB
+                                                }}
+                                            />
+                                        </Window>
+                                        <Thread />
+                                    </Channel>
+                                </Chat>
+                            ) : (
+                                <div className="flex items-center justify-center h-full">
+                                    <div className="text-center">
+                                        <div className="loading loading-spinner loading-lg mb-4"></div>
+                                        <p>Connecting to chat...</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -693,143 +516,6 @@ const GroupChatInterface = () => {
                     </div>
                 )}
             </div>
-        </div>
-    );
-};
-
-// Call Interface Component
-const CallInterface = ({ callMode, onEndCall }) => {
-    const { useCallCallingState, useParticipants } = useCallStateHooks();
-    const callingState = useCallCallingState();
-    const participants = useParticipants();
-
-    if (callingState === CallingState.JOINING) {
-        return (
-            <div className="flex items-center justify-center h-full text-white">
-                <div className="text-center">
-                    <div className="loading loading-spinner loading-lg mb-4"></div>
-                    <h2 className="text-2xl font-bold mb-2">Joining Call...</h2>
-                    <p className="text-gray-300">
-                        {callMode === 'video' ? 'Video' : 'Voice'} call with group members
-                    </p>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="h-full flex flex-col">
-            {callMode === 'video' ? (
-                <StreamTheme className="flex-1">
-                    <SpeakerLayout />
-                </StreamTheme>
-            ) : (
-                /* Voice Call UI */
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="text-center text-white">
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-                            {participants.map((participant) => (
-                                <div key={participant.sessionId} className="flex flex-col items-center">
-                                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-3 ring-4 ring-white/20">
-                                        <img
-                                            src={participant.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(participant.name)}&background=random&color=fff`}
-                                            alt={participant.name}
-                                            className="w-20 h-20 rounded-full object-cover"
-                                        />
-                                    </div>
-                                    <h3 className="font-semibold text-lg">{participant.name}</h3>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        {participant.audioEnabled ? (
-                                            <Mic className="w-4 h-4 text-green-400" />
-                                        ) : (
-                                            <MicOff className="w-4 h-4 text-red-400" />
-                                        )}
-                                        <span className="text-sm text-gray-300">
-                                            {participant.audioEnabled ? 'Speaking' : 'Muted'}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <h2 className="text-2xl font-bold mb-2">Group Voice Call</h2>
-                        <p>You're in a voice call with {participants.length - 1} other(s)</p>
-                    </div>
-                </div>
-            )}
-
-            {/* Call Controls */}
-            <div className="p-6 bg-gray-800/50 backdrop-blur-sm">
-                <div className="flex items-center justify-center">
-                    <button
-                        onClick={onEndCall}
-                        className="btn btn-circle btn-lg btn-error hover:btn-error-focus"
-                        title="End call"
-                    >
-                        <PhoneOff className="w-6 h-6" />
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// Members Sidebar Component
-const MembersSidebar = ({ group, isAdmin, onClose }) => {
-    return (
-        <div className="h-full flex flex-col">
-            <div className="p-4 border-b border-base-300">
-                <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-lg">Members ({group.members?.length || 0})</h3>
-                    <button
-                        onClick={onClose}
-                        className="btn btn-ghost btn-circle btn-sm"
-                    >
-                        ×
-                    </button>
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-3">
-                    {group.members?.map((member) => (
-                        <div key={member._id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-base-300">
-                            <div className="avatar online">
-                                <div className="w-10 h-10 rounded-full">
-                                    <img
-                                        src={member.profilePic}
-                                        alt={member.fullName}
-                                        className="object-cover"
-                                        onError={(e) => {
-                                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName)}&background=random&color=fff`;
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-semibold">{member.fullName}</span>
-                                    {group.createdBy?._id === member._id && (
-                                        <Crown className="w-4 h-4 text-warning" title="Owner" />
-                                    )}
-                                    {group.admins?.some(admin => admin._id === member._id) && (
-                                        <span className="badge badge-primary badge-sm">Admin</span>
-                                    )}
-                                </div>
-                                <p className="text-sm text-base-content/60">{member.email}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {isAdmin && (
-                <div className="p-4 border-t border-base-300">
-                    <button className="btn btn-primary btn-sm w-full">
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add Members
-                    </button>
-                </div>
-            )}
         </div>
     );
 };

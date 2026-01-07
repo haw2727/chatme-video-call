@@ -8,7 +8,8 @@ import {
     MessageSquare,
     Calendar,
     Archive,
-    Star
+    Star,
+    Heart
 } from 'lucide-react';
 
 // Icon mapping
@@ -20,7 +21,8 @@ const iconMap = {
     MessageSquare,
     Calendar,
     Archive,
-    Star
+    Star,
+    Heart
 };
 
 const SidebarNavigation = ({ items, isActive, onItemClick }) => {
@@ -35,6 +37,40 @@ const SidebarNavigation = ({ items, isActive, onItemClick }) => {
                     const Icon = iconMap[item.icon] || Home;
                     const active = isActive(item.href);
 
+                    // Handle counter items (like Friends count)
+                    if (item.isCounter) {
+                        return (
+                            <div
+                                key={item.name}
+                                className="flex items-center gap-3 px-4 py-3 rounded-lg text-base-content/70"
+                                title={item.description}
+                            >
+                                {/* Icon */}
+                                <div className="relative">
+                                    <Icon className="w-5 h-5 text-base-content/60" />
+                                </div>
+
+                                {/* Content */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-medium text-base-content/70">
+                                            {item.name}
+                                        </span>
+                                        {item.badge && (
+                                            <span className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-full font-medium">
+                                                {item.badge}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-base-content/50 truncate">
+                                        {item.description}
+                                    </p>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    // Handle regular navigation items
                     return (
                         <Link
                             key={item.name}

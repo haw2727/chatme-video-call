@@ -22,9 +22,6 @@ const GroupChatPage = () => {
     const [showCreateGroup, setShowCreateGroup] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Debug logging
-    console.log('GroupChatPage loaded:', { isAuthenticated, authUser: !!authUser });
-
     // Get user groups from API
     const { data: groupsData, isLoading: loadingGroups, error } = useQuery({
         queryKey: ["userGroups"],
@@ -33,9 +30,6 @@ const GroupChatPage = () => {
     });
 
     const groups = groupsData?.groups || [];
-
-    // Debug logging for groups
-    console.log('Groups data:', { groupsCount: groups.length, loadingGroups, error });
 
     // Filter groups based on search query
     const filteredGroups = groups.filter(group => {
@@ -71,11 +65,6 @@ const GroupChatPage = () => {
     return (
         <div className="min-h-screen bg-base-100 p-4">
             <div className="max-w-6xl mx-auto">
-                {/* Debug Info */}
-                <div className="mb-4 p-2 bg-info/10 rounded text-sm">
-                    <strong>Debug:</strong> Groups Page Loaded | Groups: {groups.length} | Loading: {loadingGroups ? 'Yes' : 'No'}
-                </div>
-
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                     <div>

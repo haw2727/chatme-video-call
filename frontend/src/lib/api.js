@@ -156,6 +156,28 @@ export async function acceptFriendRequest(userId) {
   }
 }
 
+// Reject friend request: backend expects PUT /users/friends-request/:id/reject
+export async function rejectFriendRequest(userId) {
+  try {
+    const response = await axiosInstance.put(`/users/friends-request/${userId}/reject`);
+    return response.data;
+  } catch (error) {
+    console.error("Error rejecting friend request:", error);
+    throw error;
+  }
+}
+
+// Cancel sent friend request: backend expects DELETE /users/friends-request/:id/cancel
+export async function cancelFriendRequest(userId) {
+  try {
+    const response = await axiosInstance.delete(`/users/friends-request/${userId}/cancel`);
+    return response.data;
+  } catch (error) {
+    console.error("Error cancelling friend request:", error);
+    throw error;
+  }
+}
+
 export const getStreamToken = async (targetUserId = null) => {
   try {
     // pass optional target param so server can upsert the other user
@@ -206,7 +228,10 @@ export const getCallDetails = async (callId) => {
     const response = await silentAxiosInstance.get(`/calls/${callId}`);
     return response.data;
   } catch (error) {
-    console.error('Error getting call details:', error);
+    // Don't log 404 errors as they're expected for direct calls
+    if (error.response?.status !== 404) {
+      console.error('Error getting call details:', error);
+    }
     throw error;
   }
 };
@@ -274,6 +299,26 @@ export const leaveGroup = async (groupId) => {
     return response.data;
   } catch (error) {
     console.error('Error leaving group:', error);
+    throw error;
+  }
+};
+
+export const getPotentialMembers = async (groupId) => {
+  try {
+    const response = await axiosInstance.get(`/groups/${groupId}/potential-members`);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting potential members:', error);
+    throw error;
+  }
+};
+
+export const removeMemberFromGroup = async (groupId, memberId) => {
+  try {
+    const response = await axiosInstance.delete(`/groups/${groupId}/members/${memberId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error removing member from group:', error);
     throw error;
   }
 };

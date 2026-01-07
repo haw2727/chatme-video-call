@@ -143,3 +143,72 @@ export const leaveGroup = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+export const getPotentialMembers = async (req, res) => {
+    try {
+        const { groupId } = req.params;
+        const currentUserId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+
+        // Check if current user is admin
+        if (!group.admins.includes(currentUserId)) {
+            return res.status(403).json({ message: 'Only admins can view potential members' });
+        }
+
+        // Get user's friends who are not already in the group
+        const currentUser = await User.findById(currentUserId).populate('friends', 'fullName profilePic email isOnline');
+
+        const potentialMembers = currentUser.friends.filter(friend =>
+            !group.members.some(memberId => memberId.equals(friend._id))
+        );
+
+        res.status(200).json({ success: true, potentialMembers });
+    } catch (error) {
+        console.error('Error getting potential members:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export const removeMemberFromGroup = async (req, res) => {
+    try {
+        const { groupId, memberId } = req.params;
+        const currentUserId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+
+        // Check if current user is admin
+        if (!group.admins.includes(currentUserId)) {
+            return res.status(403).json({ message: 'Only admins can remove members' });
+        }
+
+        // Can't remove the creator
+        if (group.createdBy.equals(memberId)) {
+            return res.status(400).json({ message: 'Cannot remove group creator' });
+        }
+
+        // Remove member from group
+        group.members = group.members.filter(id => !id.equals(memberId));
+        group.admins = group.admins.filter(id => !id.equals(memberId));
+        await group.save();
+
+        // Remove from Stream channel
+        const channel = streamClient.channel('messaging', group.streamChannelId);
+        await channel.removeMembers([memberId.toString()]);
+
+        const updatedGroup = await Group.findById(groupId)
+            .populate('members', 'fullName profilePic email isOnline')
+            .populate('admins', 'fullName profilePic email');
+
+        res.status(200).json({ success: true, group: updatedGroup });
+    } catch (error) {
+        console.error('Error removing member from group:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};

@@ -10,41 +10,53 @@ const useLogout = () => {
   return useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      // Clear all cached data first
-      queryClient.clear();
-      // Force remove auth data
-      queryClient.setQueryData(["authUser"], null);
-      // Clear login flag
-      localStorage.removeItem('isLoggedIn');
+      console.log('[Logout] Starting logout process...');
 
-      // Navigate to login page immediately
-      navigate('/login', { replace: true });
+      // Clear all cached data
+      queryClient.clear();
+      queryClient.setQueryData(["authUser"], null);
+
+      // Clear local storage
+      localStorage.removeItem('isLoggedIn');
+      localStorage.clear(); // Clear everything
+
+      // Clear session storage
+      sessionStorage.clear();
+
+      // Clear cookies (client-side accessible ones)
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+
+      console.log('[Logout] Cleared all data');
 
       // Show success message
       showToast.success('Logged out successfully', { id: 'logout' });
+
+      // Navigate to login page
+      navigate('/login', { replace: true });
+
+      // Force reload after a short delay to ensure clean state
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 500);
     },
     onError: (error) => {
-      console.error('Logout error:', error);
+      console.error('[Logout] Error:', error);
 
-      // Even if logout fails on server, clear local data and redirect
+      // Even if logout fails on server, clear local data
       queryClient.clear();
       queryClient.setQueryData(["authUser"], null);
-      localStorage.removeItem('isLoggedIn');
-
-      // Force navigation to login
-      navigate('/login', { replace: true });
+      localStorage.clear();
+      sessionStorage.clear();
 
       // Show info message
       showToast.info('Logged out locally', { id: 'logout' });
-    },
-    onSettled: () => {
-      // Ensure we always navigate to login regardless of success/error
-      // This is a safety net in case the above doesn't work
-      setTimeout(() => {
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
-        }
-      }, 100);
+
+      // Force navigation to login
+      window.location.href = '/login';
     }
   });
 };

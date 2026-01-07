@@ -37,7 +37,7 @@ export const useNotifications = () => {
         }
     }, [incomingRequests, queryClient]);
 
-    // Show toast notifications for accepted requests
+    // Show toast notifications for accepted requests (but don't count them as notifications)
     useEffect(() => {
         const previousAccepted = queryClient.getQueryData(['friendRequest'])?.acceptedRequests ?? [];
 
@@ -45,7 +45,7 @@ export const useNotifications = () => {
             const newAccepted = acceptedRequests.slice(previousAccepted.length);
             newAccepted.forEach(request => {
                 showToast.success(
-                    `${request.to?.fullName} accepted your friend request!`,
+                    `${request.from?.fullName} accepted your friend request!`,
                     {
                         duration: 5000,
                         id: `friend-accepted-${request._id}`,
@@ -58,7 +58,8 @@ export const useNotifications = () => {
     return {
         incomingRequests,
         acceptedRequests,
-        totalNotifications: incomingRequests.length + acceptedRequests.length,
-        hasNewNotifications: incomingRequests.length > 0 || acceptedRequests.length > 0,
+        // Only count pending incoming requests as notifications
+        totalNotifications: incomingRequests.length,
+        hasNewNotifications: incomingRequests.length > 0,
     };
 };

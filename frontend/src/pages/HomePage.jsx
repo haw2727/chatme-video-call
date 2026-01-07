@@ -10,7 +10,7 @@ import useAuthUser from '../hooks/useAuthUser';
 import { useNotifications } from '../hooks/useNotifications';
 
 function HomePage() {
-  const { isAuthenticated } = useAuthUser();
+  const { isAuthenticated, authUser } = useAuthUser();
   const { totalNotifications } = useNotifications();
   const queryClient = useQueryClient();
   const [outgoingRequestsIds, setOutgoingRequestsIds] = useState(new Set());
@@ -93,10 +93,9 @@ function HomePage() {
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-base-100 to-base-200">
-      <div className="container mx-auto px-4 py-6 max-w-7xl h-full flex flex-col">
-
-        {/* Fixed Header Section */}
-        <div className="bg-base-100 rounded-2xl p-6 shadow-sm border border-base-300 mb-6 flex-shrink-0">
+      {/* Fixed Header Section - Welcome Message */}
+      <div className="flex-shrink-0 bg-base-100 border-b border-base-300/50 shadow-sm">
+        <div className="container mx-auto px-4 py-6 max-w-7xl">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -127,27 +126,33 @@ function HomePage() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Content Area - Flexible Height */}
-        <div className="flex-1 flex flex-col gap-6 min-h-0">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto scroll-smooth scrollbar-thin">
+        <div className="container mx-auto px-4 py-6 max-w-7xl space-y-8">
 
-          {/* Friends Section - Fixed Header, Scrollable Content */}
-          <section className="bg-base-100 rounded-2xl shadow-sm border border-base-300 flex flex-col min-h-0 flex-1">
-            {/* Fixed Friends Header */}
-            <div className="p-6 pb-4 border-b border-base-300 flex-shrink-0">
-              <h2 className="text-xl font-bold">Your Friends ({friends.length})</h2>
+          {/* Friends Section */}
+          <section className="bg-base-100/80 backdrop-blur-sm rounded-2xl shadow-sm border border-base-300/50">
+            <div className="p-6 border-b border-base-300/50">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                Your Friends ({friends.length})
+              </h2>
+              <p className="text-base-content/60 text-sm mt-1">
+                Stay connected with your friends
+              </p>
             </div>
 
-            {/* Scrollable Friends Content */}
-            <div className="flex-1 overflow-y-auto p-6 pt-4">
+            <div className="p-6">
               {loadingFriends ? (
-                <div className="flex justify-center py-8">
+                <div className="flex justify-center py-12">
                   <span className="loading loading-spinner loading-lg" />
                 </div>
               ) : friends.length === 0 ? (
                 <NoFriendsFound />
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
                   {friends.map((friend) => (
                     <ModernFriendCard
                       key={friend._id}
@@ -165,14 +170,16 @@ function HomePage() {
             </div>
           </section>
 
-          {/* Discover People Section - Fixed Header, Scrollable Content */}
-          <section className="bg-base-100 rounded-2xl shadow-sm border border-base-300 flex flex-col min-h-0 flex-1">
-            {/* Fixed Discover Header */}
-            <div className="p-6 pb-4 border-b border-base-300 flex-shrink-0">
+          {/* Discover People Section */}
+          <section className="bg-base-100/80 backdrop-blur-sm rounded-2xl shadow-sm border border-base-300/50">
+            <div className="p-6 border-b border-base-300/50">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
                 <div>
-                  <h2 className="text-xl font-bold">Discover People ({filteredRecommendedUsers.length})</h2>
-                  <p className="text-base-content/70 text-sm">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+                    Discover People ({filteredRecommendedUsers.length})
+                  </h2>
+                  <p className="text-base-content/60 text-sm mt-1">
                     Find and connect with new people
                   </p>
                 </div>
@@ -203,7 +210,7 @@ function HomePage() {
                   <input
                     type="text"
                     placeholder="Search by name, email, bio, or location..."
-                    className="input input-bordered w-full pl-10 input-sm"
+                    className="input input-bordered w-full pl-10 input-sm bg-base-100/50 backdrop-blur-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -219,13 +226,13 @@ function HomePage() {
 
               {/* Filter Panel */}
               {showFilters && (
-                <div className="bg-base-200 rounded-lg p-4">
+                <div className="bg-base-200/50 backdrop-blur-sm rounded-lg p-4 border border-base-300/30">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="label">
                         <span className="label-text font-medium text-sm">Sort by</span>
                       </label>
-                      <select className="select select-bordered w-full select-sm">
+                      <select className="select select-bordered w-full select-sm bg-base-100/50">
                         <option>Recently joined</option>
                         <option>Name (A-Z)</option>
                         <option>Location</option>
@@ -235,7 +242,7 @@ function HomePage() {
                       <label className="label">
                         <span className="label-text font-medium text-sm">Location</span>
                       </label>
-                      <select className="select select-bordered w-full select-sm">
+                      <select className="select select-bordered w-full select-sm bg-base-100/50">
                         <option>All locations</option>
                         <option>Same city</option>
                         <option>Same country</option>
@@ -245,7 +252,7 @@ function HomePage() {
                       <label className="label">
                         <span className="label-text font-medium text-sm">Status</span>
                       </label>
-                      <select className="select select-bordered w-full select-sm">
+                      <select className="select select-bordered w-full select-sm bg-base-100/50">
                         <option>All users</option>
                         <option>Online now</option>
                         <option>Recently active</option>
@@ -256,20 +263,19 @@ function HomePage() {
               )}
             </div>
 
-            {/* Scrollable Discover Content */}
-            <div className="flex-1 overflow-y-auto p-6 pt-4">
+            <div className="p-6">
               {loadingRecommendedUsers ? (
-                <div className="flex justify-center py-8">
+                <div className="flex justify-center py-12">
                   <span className="loading loading-spinner loading-lg" />
                 </div>
               ) : filteredRecommendedUsers.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="bg-base-200 rounded-xl p-6 max-w-md mx-auto">
-                    <UsersIcon className="w-12 h-12 mx-auto mb-3 text-base-content/40" />
+                <div className="text-center py-12">
+                  <div className="bg-base-200/50 backdrop-blur-sm rounded-xl p-8 max-w-md mx-auto border border-base-300/30">
+                    <UsersIcon className="w-16 h-16 mx-auto mb-4 text-base-content/40" />
                     <h3 className="text-lg font-semibold mb-2">
                       {searchQuery ? 'No matches found' : 'No new people to discover'}
                     </h3>
-                    <p className="text-base-content/60 text-sm mb-3">
+                    <p className="text-base-content/60 text-sm mb-4">
                       {searchQuery
                         ? 'Try adjusting your search terms or filters'
                         : 'Check back later for new people to connect with'
@@ -288,7 +294,7 @@ function HomePage() {
               ) : (
                 <div className={
                   viewMode === 'grid'
-                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"
                     : "space-y-3"
                 }>
                   {filteredRecommendedUsers.map((user) => {
@@ -296,10 +302,10 @@ function HomePage() {
 
                     if (viewMode === 'list') {
                       return (
-                        <div key={user._id} className="bg-base-200 rounded-lg p-4 hover:bg-base-300 transition-colors duration-200">
+                        <div key={user._id} className="bg-base-200/50 backdrop-blur-sm rounded-lg p-4 hover:bg-base-300/50 transition-all duration-200 border border-base-300/30">
                           <div className="flex items-center gap-3">
                             <div className="avatar">
-                              <div className="w-12 h-12 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
+                              <div className="w-12 h-12 rounded-full ring ring-primary/20 ring-offset-base-100 ring-offset-1">
                                 <img
                                   src={user.profilePic}
                                   alt={user.fullName}
@@ -349,10 +355,10 @@ function HomePage() {
 
                     // Grid view - Compact cards
                     return (
-                      <div key={user._id} className="bg-base-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 border border-base-300">
+                      <div key={user._id} className="bg-base-200/50 backdrop-blur-sm rounded-lg p-4 hover:shadow-md transition-all duration-200 border border-base-300/30 hover:border-primary/30">
                         <div className="flex flex-col items-center text-center">
                           <div className="avatar mb-3">
-                            <div className="w-16 h-16 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
+                            <div className="w-16 h-16 rounded-full ring ring-primary/20 ring-offset-base-100 ring-offset-1">
                               <img
                                 src={user.profilePic}
                                 alt={user.fullName}
@@ -402,6 +408,9 @@ function HomePage() {
               )}
             </div>
           </section>
+
+          {/* Bottom Spacing */}
+          <div className="h-8"></div>
         </div>
       </div>
     </div>

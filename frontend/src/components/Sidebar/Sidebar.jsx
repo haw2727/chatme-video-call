@@ -4,6 +4,8 @@ import { useThemeStore } from '../../store/useThemeStore';
 import useAuthUser from '../../hooks/useAuthUser';
 import useLogout from '../../hooks/useLogout';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useChatCounts } from '../../hooks/useChatCounts';
+import { useFriendsCount } from '../../hooks/useFriendsCount';
 import { useModal } from '../../contexts/ModalContext';
 
 import SidebarHeader from './SidebarHeader';
@@ -21,6 +23,8 @@ const Sidebar = ({ isOpen, onClose }) => {
     const { authUser } = useAuthUser();
     const { mutate: logoutMutation, isPending: isLoggingOut } = useLogout();
     const { totalNotifications } = useNotifications();
+    const { chatCount, groupCount } = useChatCounts();
+    const { friendsCount } = useFriendsCount();
     const { openModal } = useModal();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -34,10 +38,19 @@ const Sidebar = ({ isOpen, onClose }) => {
     // All themes for the selector
     const allThemes = availableThemes.map(theme => theme.name);
 
-    // Update navigation items with notification badge
+    // Update navigation items with counts
     const updatedNavigationItems = navigationItems.map(item => {
         if (item.href === '/notifications') {
             return { ...item, badge: totalNotifications > 0 ? totalNotifications : null };
+        }
+        if (item.href === '/chats') {
+            return { ...item, badge: chatCount > 0 ? chatCount : null };
+        }
+        if (item.href === '/groups') {
+            return { ...item, badge: groupCount > 0 ? groupCount : null };
+        }
+        if (item.isCounter && item.name === 'Friends') {
+            return { ...item, badge: friendsCount > 0 ? friendsCount : null };
         }
         return item;
     });

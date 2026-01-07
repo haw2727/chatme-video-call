@@ -2,7 +2,9 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
-    fullName: { type: String, required: true },
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    fullName: { type: String }, // Computed field for backward compatibility
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true, minlength: 8 },
     bio: { type: String, default: "" },
@@ -13,8 +15,14 @@ const userSchema = new mongoose.Schema({
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
 }, { timestamps: true });
 
-// Pre-save hook for hashing passwords
+// Pre-save hook to compute fullName
 userSchema.pre('save', async function (next) {
+    // Compute fullName from firstName and lastName
+    if (this.firstName && this.lastName) {
+        this.fullName = `${this.firstName} ${this.lastName}`;
+    }
+
+    // Hash password if modified
     if (!this.isModified('password')) {
         return next();
     }

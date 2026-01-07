@@ -1,6 +1,6 @@
 import React from 'react';
 import { Check, X, Clock, User } from 'lucide-react';
-import { getLanguageFlag, capitalize } from '../utils/languageUtils';
+import { getLanguageFlag, capitalize } from '../utils/languageUtils.jsx';
 
 const ModernNotificationCard = ({
     request,
@@ -57,6 +57,9 @@ const ModernNotificationCard = ({
                                 src={user?.profilePic || '/default-avatar.png'}
                                 alt={user?.fullName}
                                 className="object-cover"
+                                onError={(e) => {
+                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=random&color=fff`;
+                                }}
                             />
                         </div>
                     </div>
@@ -88,11 +91,11 @@ const ModernNotificationCard = ({
                         {user?.nativeLanguage && (
                             <div className="flex flex-wrap gap-1 mb-3">
                                 <div className="badge badge-outline badge-xs">
-                                    {getLanguageFlag(user.nativeLanguage)} {capitalize(user.nativeLanguage)}
+                                    {getLanguageFlag && getLanguageFlag(user.nativeLanguage)} {capitalize && capitalize(user.nativeLanguage)}
                                 </div>
                                 {user.learningLanguage && (
                                     <div className="badge badge-outline badge-xs">
-                                        Learning {getLanguageFlag(user.learningLanguage)} {capitalize(user.learningLanguage)}
+                                        Learning {getLanguageFlag && getLanguageFlag(user.learningLanguage)} {capitalize && capitalize(user.learningLanguage)}
                                     </div>
                                 )}
                             </div>
@@ -109,7 +112,7 @@ const ModernNotificationCard = ({
                         {type === 'incoming' && (
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => onAccept(request._id)}
+                                    onClick={() => onAccept && onAccept(request._id)}
                                     disabled={isLoading}
                                     className="btn btn-primary btn-sm flex-1"
                                 >
@@ -124,9 +127,10 @@ const ModernNotificationCard = ({
                                 </button>
 
                                 <button
-                                    onClick={() => onReject(request._id)}
+                                    onClick={() => onReject && onReject(request._id)}
                                     disabled={isLoading}
-                                    className="btn btn-outline btn-sm"
+                                    className="btn btn-outline btn-error btn-sm"
+                                    title="Reject request"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>

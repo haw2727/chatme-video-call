@@ -1,6 +1,6 @@
 
 import jwt from 'jsonwebtoken';
-import  User  from '../models/User.js';
+import User from '../models/User.js';
 
 export const protectRoute = async (req, res, next) => {
     try {
@@ -25,7 +25,6 @@ export const protectRoute = async (req, res, next) => {
             return res.status(401).json({ message: 'Unauthorized - user not found' });
         }
         req.user = user; // Make sure this is set
-        console.log('Auth user:', user._id); // Debug log
         next();
     } catch (error) {
         console.error('Auth middleware error:', error);

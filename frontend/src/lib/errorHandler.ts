@@ -89,3 +89,15 @@ export const validateFullName = (fullName: string): string | null => {
     if (fullName.trim().length < 2) return 'Full name must be at least 2 characters';
     return null;
 };
+
+export const validateFirstName = (firstName: string): string | null => {
+    if (!firstName?.trim()) return 'First name is required';
+    if (firstName.trim().length < 2) return 'First name must be at least 2 characters';
+    return null;
+};
+
+export const validateLastName = (lastName: string): string | null => {
+    if (!lastName?.trim()) return 'Last name is required';
+    if (lastName.trim().length < 2) return 'Last name must be at least 2 characters';
+    return null;
+};

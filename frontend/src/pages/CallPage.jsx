@@ -12,6 +12,7 @@ import {
   CallControls,
   StreamTheme,
   useCallStateHooks,
+  useCall,
   CallingState,
   ParticipantView,
 } from '@stream-io/video-react-sdk';
@@ -53,12 +54,17 @@ function CallPage() {
     enabled: !!authUser,
   });
 
-  // Get call details from backend
-  const { data: callDetailsData } = useQuery({
+  // Get call details from backend (optional - fallback if not available)
+  const { data: callDetailsData, error: callDetailsError } = useQuery({
     queryKey: ["callDetails", callId],
     queryFn: () => getCallDetails(callId),
     enabled: !!callId && !!authUser,
+    retry: false, // Don't retry on 404
+    refetchOnWindowFocus: false,
   });
+
+  // Check if call details failed to load (404 error)
+  const callNotFound = callDetailsError?.response?.status === 404;
 
   useEffect(() => {
     // Get call parameters from URL
@@ -67,24 +73,37 @@ function CallPage() {
     const initiated = searchParams.get('initiated') === 'true';
     const accepted = searchParams.get('accepted') === 'true';
 
+    console.log('CallPage URL params:', { type, friends, initiated, accepted, callId });
+
     setCallType(type);
 
     // Handle different call scenarios
     if (callDetailsData?.success && callDetailsData.callData) {
+      // Backend call data available
       const callInfo = callDetailsData.callData;
       setCallData(callInfo);
-
-      // Extract participant IDs
       const participantIds = callInfo.participants?.map(p => p.id) || [];
       if (callInfo.caller?.id) {
         participantIds.push(callInfo.caller.id);
       }
-      setFriendIds(participantIds.filter(id => id !== authUser?._id));
+      const filteredIds = participantIds.filter(id => id !== authUser?._id);
+      console.log('Using backend call data, participants:', filteredIds);
+      setFriendIds(filteredIds);
     } else if (friends) {
-      // Fallback to URL params (legacy)
-      setFriendIds(friends.split(','));
+      // Direct call from URL params (this is the normal case)
+      const filteredIds = friends.split(',').filter(id => id && id !== authUser?._id);
+      console.log('Using URL params, participants:', filteredIds);
+      setFriendIds(filteredIds);
+    } else if (callNotFound) {
+      // Call not found in backend, but we can still proceed with direct call
+      console.log('Call not found in backend, proceeding with direct call');
+      setFriendIds([]);
+    } else {
+      // No specific participants - proceed anyway
+      console.log('Direct call without specific participants');
+      setFriendIds([]);
     }
-  }, [searchParams, callDetailsData, authUser]);
+  }, [searchParams, callDetailsData, authUser, callNotFound, callId]);
 
   useEffect(() => {
     let videoClientInstance = null;
@@ -92,20 +111,60 @@ function CallPage() {
     let cancelled = false;
 
     const initCall = async () => {
-      if (!authUser) return;
-      if (tokenData === undefined) return;
+      if (!authUser) {
+        console.log('Waiting for authUser...');
+        return;
+      }
+      if (tokenData === undefined) {
+        console.log('Waiting for tokenData...');
+        return;
+      }
       if (!tokenData || !callId) {
         setIsConnecting(false);
         if (!tokenData) toast.error("Unable to get Stream token for call");
         return;
       }
 
+      console.log('Initializing call:', { callId, callType, friendIds, authUser: authUser._id });
+
       try {
+        // Request media permissions first
+        try {
+          const constraints = callType === 'video'
+            ? { audio: true, video: true }
+            : { audio: true, video: false };
+
+          console.log('Requesting media permissions:', constraints);
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          console.log('Media permissions granted successfully');
+
+          // Stop the test stream since Stream SDK will handle media
+          stream.getTracks().forEach(track => track.stop());
+        } catch (permissionError) {
+          console.error('Media permission denied:', permissionError);
+
+          // More specific error messages
+          let errorMessage = 'Media access is required for calls.';
+          if (permissionError.name === 'NotAllowedError') {
+            errorMessage = `${callType === 'video' ? 'Camera and microphone' : 'Microphone'} access was denied. Please allow access in your browser settings and try again.`;
+          } else if (permissionError.name === 'NotFoundError') {
+            errorMessage = `No ${callType === 'video' ? 'camera or microphone' : 'microphone'} found. Please check your device connections.`;
+          } else if (permissionError.name === 'NotReadableError') {
+            errorMessage = `${callType === 'video' ? 'Camera or microphone' : 'Microphone'} is already in use by another application.`;
+          }
+
+          toast.error(errorMessage);
+          setIsConnecting(false);
+          return;
+        }
+
         const user = {
           id: authUser._id,
           name: authUser.fullName,
           image: authUser.profilePic,
         }
+
+        console.log('Creating Stream Video client for user:', user);
 
         const videoClient = new StreamVideoClient({
           apiKey: STREAM_API_KEY,
@@ -118,28 +177,70 @@ function CallPage() {
         const callInstanceLocal = videoClient.call("default", callId);
         callInstance = callInstanceLocal;
 
-        // Join call with initial settings based on call type
-        await callInstanceLocal.join({
-          create: true,
-          data: {
-            members: [
-              { user_id: authUser._id },
-              ...friendIds.map(id => ({ user_id: id }))
-            ],
-            settings_override: {
-              audio: {
-                default_device: 'speaker',
-              },
-              video: {
-                enabled: callType === 'video',
-              }
-            }
-          }
-        });
+        console.log('Joining call with members:', [authUser._id, ...friendIds]);
 
-        // Set initial camera/mic state based on call type
-        if (callType === 'voice') {
-          await callInstanceLocal.camera.disable();
+        // Join call - if no friendIds, just create a call for the current user
+        const members = friendIds.length > 0
+          ? [
+            { user_id: authUser._id },
+            ...friendIds.map(id => ({ user_id: id }))
+          ]
+          : [{ user_id: authUser._id }];
+
+        console.log('Call members:', members);
+
+        // Join call with initial settings based on call type
+        try {
+          await callInstanceLocal.join({
+            create: true,
+            data: {
+              members: members
+            }
+          });
+
+          console.log('Successfully joined call');
+        } catch (joinError) {
+          console.error('Error joining call:', joinError);
+
+          // Provide more helpful error message
+          let errorMsg = 'Failed to join call';
+          if (joinError.message) {
+            errorMsg += `: ${joinError.message}`;
+          }
+          if (joinError.message?.includes('permission')) {
+            errorMsg = 'Permission denied. Please check your Stream API configuration.';
+          }
+
+          toast.error(errorMsg);
+          throw joinError;
+        }
+
+        // Wait for call to be fully established
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        try {
+          console.log('Setting up media devices for', callType, 'call');
+
+          // Always enable microphone first
+          if (callInstanceLocal.microphone) {
+            await callInstanceLocal.microphone.enable();
+            console.log('Microphone enabled');
+          }
+
+          // Then handle camera based on call type
+          if (callType === 'video') {
+            if (callInstanceLocal.camera) {
+              await callInstanceLocal.camera.enable();
+              console.log('Camera enabled for video call');
+            }
+          } else {
+            // For voice calls, ensure camera stays disabled
+            console.log('Voice call - camera will remain disabled');
+          }
+        } catch (deviceError) {
+          console.warn('Error setting up camera/microphone:', deviceError);
+          // Don't fail the call for device setup errors, just log them
+          toast.warning('Some media devices may not be working properly');
         }
 
         if (cancelled) return;
@@ -204,6 +305,7 @@ function CallPage() {
 
 const CallContent = ({ callType, friendIds }) => {
   const { useCallCallingState, useParticipants, useLocalParticipant } = useCallStateHooks();
+  const call = useCall();
   const callingState = useCallCallingState();
   const participants = useParticipants();
   const localParticipant = useLocalParticipant();
@@ -254,24 +356,40 @@ const CallContent = ({ callType, friendIds }) => {
   };
 
   const toggleVideo = async () => {
-    if (localParticipant?.videoStream) {
-      if (isVideoEnabled) {
-        await localParticipant.videoStream.disable();
-      } else {
-        await localParticipant.videoStream.enable();
+    try {
+      if (call?.camera) {
+        if (isVideoEnabled) {
+          await call.camera.disable();
+          setIsVideoEnabled(false);
+          toast.info('Camera turned off');
+        } else {
+          await call.camera.enable();
+          setIsVideoEnabled(true);
+          toast.info('Camera turned on');
+        }
       }
-      setIsVideoEnabled(!isVideoEnabled);
+    } catch (error) {
+      console.error('Error toggling video:', error);
+      toast.error('Failed to toggle camera');
     }
   };
 
   const toggleAudio = async () => {
-    if (localParticipant?.audioStream) {
-      if (isAudioEnabled) {
-        await localParticipant.audioStream.disable();
-      } else {
-        await localParticipant.audioStream.enable();
+    try {
+      if (call?.microphone) {
+        if (isAudioEnabled) {
+          await call.microphone.disable();
+          setIsAudioEnabled(false);
+          toast.info('Microphone muted');
+        } else {
+          await call.microphone.enable();
+          setIsAudioEnabled(true);
+          toast.info('Microphone unmuted');
+        }
       }
-      setIsAudioEnabled(!isAudioEnabled);
+    } catch (error) {
+      console.error('Error toggling audio:', error);
+      toast.error('Failed to toggle microphone');
     }
   };
 
@@ -291,8 +409,17 @@ const CallContent = ({ callType, friendIds }) => {
     }
   };
 
-  const endCall = () => {
-    navigate("/");
+  const endCall = async () => {
+    try {
+      if (call) {
+        await call.leave();
+        toast.success('Call ended');
+      }
+      navigate("/");
+    } catch (error) {
+      console.error('Error ending call:', error);
+      navigate("/");
+    }
   };
 
   if (callingState === CallingState.JOINING) {

@@ -13,10 +13,10 @@ if (!process.env.JWT_SECRET_KEY) {
 }
 
 export const signup = async (req, res) => {
-    const { fullName, email, password, bio, location } = req.body;
+    const { firstName, lastName, email, password, bio, location } = req.body;
     try {
-        if (!fullName || !email || !password) {
-            return res.status(400).json({ message: "Full name, email and password are required" });
+        if (!firstName || !lastName || !email || !password) {
+            return res.status(400).json({ message: "First name, last name, email and password are required" });
         }
         if (password.length < 8) {
             return res.status(400).json({ message: "Password must be at least 8 characters long" });
@@ -38,7 +38,8 @@ export const signup = async (req, res) => {
 
         // Save the new user (password will be hashed by User model pre-save hook)
         const newUser = await User.create({
-            fullName,
+            firstName,
+            lastName,
             email,
             password,
             bio: bio || "",

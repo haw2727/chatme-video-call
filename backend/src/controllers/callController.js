@@ -20,18 +20,33 @@ export function removeUserConnection(userId) {
 }
 
 export function broadcastToUser(userId, message) {
+    console.log(`[broadcastToUser] Attempting to send to user: ${userId}`);
+    console.log(`[broadcastToUser] Total connections: ${userConnections.size}`);
+    console.log(`[broadcastToUser] Connected users:`, Array.from(userConnections.keys()));
+
     const ws = userConnections.get(userId);
-    if (ws && ws.readyState === 1) { // WebSocket.OPEN
+
+    if (!ws) {
+        console.log(`[broadcastToUser] No WebSocket connection found for user: ${userId}`);
+        return false;
+    }
+
+    console.log(`[broadcastToUser] WebSocket found, readyState: ${ws.readyState}`);
+
+    if (ws.readyState === 1) { // WebSocket.OPEN
         try {
             ws.send(JSON.stringify(message));
+            console.log(`[broadcastToUser] ✅ Message sent successfully to user: ${userId}`);
             return true;
         } catch (error) {
-            console.error(`Failed to send message to user ${userId}:`, error);
+            console.error(`[broadcastToUser] ❌ Failed to send message to user ${userId}:`, error);
             userConnections.delete(userId);
             return false;
         }
+    } else {
+        console.log(`[broadcastToUser] ❌ WebSocket not open for user ${userId}, readyState: ${ws.readyState}`);
+        return false;
     }
-    return false;
 }
 
 // Broadcast message to multiple users
@@ -102,11 +117,19 @@ export async function initiateCall(req, res) {
             createdAt: callInvitation.createdAt
         };
 
+        console.log('Sending call invitation:', invitationMessage);
+        console.log('To participants:', participantUsers.map(u => u._id.toString()));
+
         let sentCount = 0;
         for (const participant of participantUsers) {
-            const sent = broadcastToUser(participant._id.toString(), invitationMessage);
+            const participantId = participant._id.toString();
+            console.log(`Attempting to send to participant: ${participantId}`);
+            const sent = broadcastToUser(participantId, invitationMessage);
+            console.log(`Sent to ${participantId}: ${sent}`);
             if (sent) sentCount++;
         }
+
+        console.log(`Call invitation sent to ${sentCount}/${participantUsers.length} participants`);
 
         // Auto-expire invitation after 60 seconds
         setTimeout(() => {

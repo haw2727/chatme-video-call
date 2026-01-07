@@ -5,7 +5,8 @@ import { useSignup } from '../hooks/useSignup';
 
 function SignUpPage() {
   const [formData, setFormData] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -26,7 +27,7 @@ function SignUpPage() {
     e.preventDefault();
 
     // Basic validation
-    if (!formData.fullName || !formData.email || !formData.password) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
       return;
     }
 
@@ -37,7 +38,8 @@ function SignUpPage() {
     signupMutation(formData);
   };
 
-  const isFormValid = formData.fullName &&
+  const isFormValid = formData.firstName &&
+    formData.lastName &&
     formData.email &&
     formData.password &&
     formData.confirmPassword &&
@@ -100,19 +102,39 @@ function SignUpPage() {
               {/* Signup Form */}
               <form onSubmit={handleSignup} className="space-y-4">
 
-                {/* Full Name */}
+                {/* First Name */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Full Name *</span>
+                    <span className="label-text font-medium">First Name *</span>
                   </label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/40" />
                     <input
                       type="text"
-                      name="fullName"
-                      placeholder="Enter your full name"
+                      name="firstName"
+                      placeholder="Enter your first name"
                       className="input input-bordered w-full pl-12 focus:input-secondary"
-                      value={formData.fullName}
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isPending}
+                    />
+                  </div>
+                </div>
+
+                {/* Last Name */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Last Name *</span>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-base-content/40" />
+                    <input
+                      type="text"
+                      name="lastName"
+                      placeholder="Enter your last name"
+                      className="input input-bordered w-full pl-12 focus:input-secondary"
+                      value={formData.lastName}
                       onChange={handleInputChange}
                       required
                       disabled={isPending}
@@ -180,8 +202,8 @@ function SignUpPage() {
                       name="confirmPassword"
                       placeholder="Confirm your password"
                       className={`input input-bordered w-full pl-12 pr-12 focus:input-secondary ${formData.confirmPassword && formData.password !== formData.confirmPassword
-                          ? 'input-error'
-                          : ''
+                        ? 'input-error'
+                        : ''
                         }`}
                       value={formData.confirmPassword}
                       onChange={handleInputChange}

@@ -9,11 +9,28 @@ export const navigationItems = [
         exact: true
     },
     {
+        name: 'Friends',
+        href: '/',
+        icon: 'Heart',
+        description: 'Your friends list',
+        badge: null, // This will be dynamically updated
+        exact: true,
+        isCounter: true // Special flag to indicate this is just a counter
+    },
+    {
+        name: 'Chats',
+        href: '/chats',
+        icon: 'MessageSquare',
+        description: 'Direct messages and conversations',
+        badge: null, // This will be dynamically updated
+        exact: false
+    },
+    {
         name: 'Groups',
         href: '/groups',
         icon: 'Users',
         description: 'Group chats and communities',
-        badge: null,
+        badge: null, // This will be dynamically updated
         exact: false
     },
     {
@@ -42,13 +59,6 @@ export const quickActions = [
         description: 'Start a conversation',
         action: 'newChat',
         type: 'action'
-    },
-    {
-        name: 'Start Call',
-        icon: 'Phone',
-        description: 'Voice or video call',
-        href: '/call-selection',
-        type: 'link'
     },
     {
         name: 'Home',

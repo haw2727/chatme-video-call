@@ -50,15 +50,6 @@ function LogInPage() {
                 </p>
               </div>
 
-              {/* Test Credentials Info */}
-              <div className="mb-6 p-4 bg-info/10 border border-info/20 rounded-lg">
-                <h3 className="font-semibold text-info mb-2">Test Credentials:</h3>
-                <p className="text-sm text-info/80">
-                  <strong>Email:</strong> test@example.com<br />
-                  <strong>Password:</strong> password123
-                </p>
-              </div>
-
               {/* Error Display */}
               {error && (
                 <div className="mb-6 alert alert-error">

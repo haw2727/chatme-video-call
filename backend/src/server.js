@@ -7,6 +7,7 @@ import chatRoutes from './routes/chat.route.js';
 import groupRoutes from './routes/group.route.js';
 import callRoutes from './routes/call.route.js';
 import groupCallRoutes from './routes/groupCall.route.js';
+import adminRoutes from './routes/admin.js';
 import { connectDB } from './lib/db.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -38,6 +39,7 @@ connectDB()
     app.use('/api/groups', groupRoutes);
     app.use('/api/calls', callRoutes);
     app.use('/api/group-calls', groupCallRoutes);
+    app.use('/api/admin', adminRoutes);
     app.get('/api/health', (req, res) => res.json({ ok: true }));
 
     // serve frontend (safe catch-all)

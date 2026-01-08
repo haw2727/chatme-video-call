@@ -113,49 +113,56 @@ const Sidebar = ({ isOpen, onClose }) => {
                 transform transition-transform duration-300 ease-in-out
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                 lg:translate-x-0 lg:static lg:z-auto
-                flex flex-col
+                flex flex-col overflow-hidden
             `}>
 
-                {/* Header Section */}
-                <SidebarHeader
-                    user={authUser}
-                />
+                {/* Header Section - Fixed */}
+                <div className="flex-shrink-0">
+                    <SidebarHeader user={authUser} />
+                </div>
 
-                {/* Search Section */}
-                <SidebarSearch
-                    searchQuery={searchQuery}
-                    onSearch={handleSearch}
-                />
+                {/* Search Section - Fixed */}
+                <div className="flex-shrink-0">
+                    <SidebarSearch
+                        searchQuery={searchQuery}
+                        onSearch={handleSearch}
+                    />
+                </div>
 
-                {/* Navigation Section */}
-                <SidebarNavigation
-                    items={updatedNavigationItems}
-                    isActive={isActive}
-                    onItemClick={onClose}
-                />
+                {/* Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto">
+                    {/* Navigation Section */}
+                    <SidebarNavigation
+                        items={updatedNavigationItems}
+                        isActive={isActive}
+                        onItemClick={onClose}
+                    />
 
-                {/* Quick Actions Section */}
-                <SidebarQuickActions
-                    actions={quickActions}
-                    onActionClick={handleAction}
-                />
+                    {/* Quick Actions Section */}
+                    <SidebarQuickActions
+                        actions={quickActions}
+                        onActionClick={handleAction}
+                    />
 
-                {/* Groups Section */}
-                <SidebarGroups
-                    onItemClick={onClose}
-                />
+                    {/* Groups Section */}
+                    <SidebarGroups
+                        onItemClick={onClose}
+                    />
+                </div>
 
-                {/* Footer Section */}
-                <SidebarFooter
-                    theme={theme}
-                    themes={allThemes}
-                    popularThemes={popularThemes}
-                    showThemeSelector={showThemeSelector}
-                    onThemeToggle={() => setShowThemeSelector(!showThemeSelector)}
-                    onThemeChange={handleThemeChange}
-                    onLogout={handleLogout}
-                    isLoggingOut={isLoggingOut}
-                />
+                {/* Footer Section - Fixed at bottom */}
+                <div className="flex-shrink-0 mt-auto">
+                    <SidebarFooter
+                        theme={theme}
+                        themes={allThemes}
+                        popularThemes={popularThemes}
+                        showThemeSelector={showThemeSelector}
+                        onThemeToggle={() => setShowThemeSelector(!showThemeSelector)}
+                        onThemeChange={handleThemeChange}
+                        onLogout={handleLogout}
+                        isLoggingOut={isLoggingOut}
+                    />
+                </div>
             </div>
         </>
     );

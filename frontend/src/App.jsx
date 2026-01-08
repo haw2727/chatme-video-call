@@ -10,6 +10,7 @@ import NotificationPage from './pages/NotificationPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import GroupChatPage from './pages/GroupChatPage.jsx';
 import GroupChatInterface from './pages/GroupChatInterface.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
 
 import { Toaster } from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
@@ -144,6 +145,13 @@ function App() {
                 <ModernLayout showSidebar={true}>
                   <SettingsPage />
                 </ModernLayout>
+              ) : (
+                <Navigate to="/login" />
+              )} />
+            <Route
+              path="/admin"
+              element={isAuthenticated ? (
+                <AdminDashboard />
               ) : (
                 <Navigate to="/login" />
               )} />

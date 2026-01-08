@@ -79,22 +79,13 @@ const SidebarQuickActions = ({ actions, onActionClick }) => {
 
             {/* Additional Quick Actions */}
             <div className="mt-4 pt-4 border-t border-base-300/30">
-                <div className="grid grid-cols-2 gap-2">
-                    <button
-                        className="btn btn-sm btn-ghost justify-start"
-                        onClick={() => onActionClick?.('createGroup')}
-                    >
-                        <Plus className="w-4 h-4" />
-                        Create
-                    </button>
-                    <Link
-                        to="/"
-                        className="btn btn-sm btn-ghost justify-start"
-                    >
-                        <Home className="w-4 h-4" />
-                        Home
-                    </Link>
-                </div>
+                <button
+                    className="btn btn-sm btn-ghost w-full justify-start gap-2"
+                    onClick={() => onActionClick?.('createGroup')}
+                >
+                    <Plus className="w-4 h-4" />
+                    Create Group
+                </button>
             </div>
         </div>
     );

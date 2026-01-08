@@ -1,14 +1,6 @@
 // Sidebar Navigation Configuration
 export const navigationItems = [
     {
-        name: 'Home',
-        href: '/',
-        icon: 'Home',
-        description: 'Dashboard and friends',
-        badge: null,
-        exact: true
-    },
-    {
         name: 'Friends',
         href: '/',
         icon: 'Heart',
@@ -59,13 +51,6 @@ export const quickActions = [
         description: 'Start a conversation',
         action: 'newChat',
         type: 'action'
-    },
-    {
-        name: 'Home',
-        icon: 'Home',
-        description: 'Back to home',
-        href: '/',
-        type: 'link'
     }
 ];
 

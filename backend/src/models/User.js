@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema({
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    fullName: { type: String }, // Computed field for backward compatibility
+    fullName: { type: String }, // Computed from firstName + lastName
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true, minlength: 8 },
     bio: { type: String, default: "" },
@@ -12,7 +12,8 @@ const userSchema = new mongoose.Schema({
     location: { type: String, default: "" },
     isOnline: { type: Boolean, default: false },
     lastSeen: { type: Date, default: Date.now },
-    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
+    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    isAdmin: { type: Boolean, default: false }
 }, { timestamps: true });
 
 // Pre-save hook to compute fullName

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, X, Filter } from 'lucide-react';
+import { Search, X, Filter, Users, MessageSquare, Home } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const SidebarSearch = ({ searchQuery, onSearch }) => {
     const [localQuery, setLocalQuery] = useState(searchQuery || '');
@@ -27,6 +28,31 @@ const SidebarSearch = ({ searchQuery, onSearch }) => {
 
     return (
         <div className="p-4 border-b border-base-300/50">
+            {/* Quick Navigation Tabs */}
+            <div className="flex gap-2 mb-3">
+                <Link
+                    to="/"
+                    className="flex-1 btn btn-sm btn-ghost justify-center gap-1 hover:bg-primary/10"
+                >
+                    <Home className="w-4 h-4" />
+                    <span className="text-xs">Home</span>
+                </Link>
+                <Link
+                    to="/groups"
+                    className="flex-1 btn btn-sm btn-ghost justify-center gap-1 hover:bg-primary/10"
+                >
+                    <Users className="w-4 h-4" />
+                    <span className="text-xs">Groups</span>
+                </Link>
+                <Link
+                    to="/chats"
+                    className="flex-1 btn btn-sm btn-ghost justify-center gap-1 hover:bg-primary/10"
+                >
+                    <MessageSquare className="w-4 h-4" />
+                    <span className="text-xs">Chats</span>
+                </Link>
+            </div>
+
             {/* Search Input */}
             <form onSubmit={handleSubmit} className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-base-content/40" />
@@ -80,8 +106,8 @@ const SidebarSearch = ({ searchQuery, onSearch }) => {
                                         key={option.value}
                                         onClick={() => handleFilterChange('type', option.value)}
                                         className={`btn btn-xs ${filters.type === option.value
-                                                ? 'btn-primary'
-                                                : 'btn-ghost'
+                                            ? 'btn-primary'
+                                            : 'btn-ghost'
                                             }`}
                                     >
                                         {option.label}
@@ -105,8 +131,8 @@ const SidebarSearch = ({ searchQuery, onSearch }) => {
                                         key={option.value}
                                         onClick={() => handleFilterChange('status', option.value)}
                                         className={`btn btn-xs ${filters.status === option.value
-                                                ? 'btn-primary'
-                                                : 'btn-ghost'
+                                            ? 'btn-primary'
+                                            : 'btn-ghost'
                                             }`}
                                     >
                                         {option.label}

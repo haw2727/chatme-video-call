@@ -362,3 +362,34 @@ export const joinGroupCall = async (groupId, callId) => {
     throw error;
   }
 };
+
+// Admin APIs
+export const getAdminStats = async () => {
+  try {
+    const response = await axiosInstance.get('/admin/stats');
+    return response.data;
+  } catch (error) {
+    console.error('Error getting admin stats:', error);
+    throw error;
+  }
+};
+
+export const getAllUsers = async () => {
+  try {
+    const response = await axiosInstance.get('/admin/users');
+    return response.data;
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    throw error;
+  }
+};
+
+export const deleteUserById = async (userId) => {
+  try {
+    const response = await axiosInstance.delete(`/admin/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
+};

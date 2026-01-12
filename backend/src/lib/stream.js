@@ -4,7 +4,7 @@ import "dotenv/config";
 const apiKey = process.env.STREAM_API_KEY;
 const apiSecret = process.env.STREAM_API_SECRET;
 
-console.log('STREAM API KEY (backend):', apiKey ? `${apiKey.slice(0,6)}...` : 'undefined');
+console.log('STREAM API KEY (backend):', apiKey ? `${apiKey.slice(0, 6)}...` : 'undefined');
 console.log('STREAM API SECRET loaded:', !!apiSecret);
 
 if (!apiKey || !apiSecret) {

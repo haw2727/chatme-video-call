@@ -13,6 +13,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@stream-io/node-sdk": "^0.7.33",
     "bcryptjs": "^3.0.2",
     "chatme": "file:..",
     "cookie-parser": "^1.4.7",

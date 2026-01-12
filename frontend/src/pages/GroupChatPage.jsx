@@ -114,79 +114,79 @@ const GroupChatPage = () => {
 
                 {/* Groups Grid */}
                 {!loadingGroups && !error && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         {filteredGroups.map((group) => (
-                            <div key={group._id} className="card bg-base-200 shadow-lg hover:shadow-xl transition-all duration-300">
-                                <div className="card-body">
-                                    {/* Group Header */}
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="avatar">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                                                <Users className="w-6 h-6 text-white" />
-                                            </div>
+                            <div
+                                key={group._id}
+                                className="bg-base-100 rounded-xl border border-base-300 hover:border-primary/50 hover:shadow-lg transition-all duration-300 overflow-hidden"
+                            >
+                                {/* Group Header with Gradient Background */}
+                                <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-4 border-b border-base-300">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
+                                            <Users className="w-6 h-6 text-white" />
                                         </div>
-                                        <div className="flex-1">
+                                        <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <h3 className="font-bold text-lg truncate">{group.name}</h3>
+                                                <h3 className="font-bold text-base sm:text-lg truncate">{group.name}</h3>
                                                 {isUserAdmin(group) && (
                                                     <Crown className="w-4 h-4 text-warning flex-shrink-0" title="Admin" />
                                                 )}
                                             </div>
-                                            <p className="text-sm opacity-70">{formatMemberCount(group.members)}</p>
+                                            <p className="text-xs sm:text-sm text-base-content/70">{formatMemberCount(group.members)}</p>
                                         </div>
                                     </div>
+                                </div>
 
+                                {/* Group Body */}
+                                <div className="p-4 space-y-3">
                                     {/* Group Description */}
                                     {group.description && (
-                                        <p className="text-sm opacity-80 mb-3 line-clamp-2">{group.description}</p>
+                                        <p className="text-sm text-base-content/80 line-clamp-2">{group.description}</p>
                                     )}
 
                                     {/* Members Preview */}
                                     {group.members && group.members.length > 0 && (
-                                        <div className="flex items-center gap-2 mb-4">
+                                        <div className="flex items-center gap-2">
                                             <div className="flex -space-x-2">
-                                                {group.members.slice(0, 3).map((member, index) => (
-                                                    <div key={member._id || index} className="avatar">
-                                                        <div className="w-6 h-6 rounded-full ring ring-base-100 ring-offset-1">
-                                                            <img
-                                                                src={member.profilePic}
-                                                                alt={member.fullName}
-                                                                className="object-cover"
-                                                                onError={(e) => {
-                                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName)}&background=random&color=fff`;
-                                                                }}
-                                                            />
-                                                        </div>
+                                                {group.members.slice(0, 4).map((member, index) => (
+                                                    <div key={member._id || index} className="w-8 h-8 rounded-full border-2 border-base-100 overflow-hidden bg-base-300">
+                                                        <img
+                                                            src={member.profilePic}
+                                                            alt={member.fullName}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName)}&background=random&color=fff`;
+                                                            }}
+                                                        />
                                                     </div>
                                                 ))}
-                                                {group.members.length > 3 && (
-                                                    <div className="avatar">
-                                                        <div className="w-6 h-6 rounded-full bg-base-300 flex items-center justify-center text-xs font-bold">
-                                                            +{group.members.length - 3}
-                                                        </div>
+                                                {group.members.length > 4 && (
+                                                    <div className="w-8 h-8 rounded-full bg-base-300 border-2 border-base-100 flex items-center justify-center">
+                                                        <span className="text-xs font-bold">+{group.members.length - 4}</span>
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className="text-xs text-base-content/60">
-                                                {group.members.slice(0, 2).map(m => m.fullName).join(', ')}
-                                                {group.members.length > 2 && ` and ${group.members.length - 2} others`}
+                                            <span className="text-xs text-base-content/60 truncate flex-1">
+                                                {group.members.slice(0, 2).map(m => m.fullName?.split(' ')[0]).join(', ')}
+                                                {group.members.length > 2 && ` +${group.members.length - 2}`}
                                             </span>
                                         </div>
                                     )}
 
                                     {/* Action Buttons */}
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 pt-2">
                                         <Link
                                             to={`/groups/${group._id}`}
-                                            className="btn btn-primary btn-sm flex-1"
+                                            className="btn btn-primary btn-sm flex-1 gap-1"
                                         >
-                                            <MessageSquare className="w-4 h-4 mr-1" />
-                                            Chat
+                                            <MessageSquare className="w-4 h-4" />
+                                            <span className="hidden sm:inline">Chat</span>
                                         </Link>
 
                                         <Link
                                             to={`/groups/${group._id}`}
-                                            className="btn btn-outline btn-sm"
+                                            className="btn btn-ghost btn-sm"
                                             title="Video Call"
                                         >
                                             <Video className="w-4 h-4" />
@@ -194,7 +194,7 @@ const GroupChatPage = () => {
 
                                         <Link
                                             to={`/groups/${group._id}`}
-                                            className="btn btn-outline btn-sm"
+                                            className="btn btn-ghost btn-sm"
                                             title="Voice Call"
                                         >
                                             <Phone className="w-4 h-4" />
@@ -202,7 +202,7 @@ const GroupChatPage = () => {
 
                                         {isUserAdmin(group) && (
                                             <button
-                                                className="btn btn-outline btn-sm"
+                                                className="btn btn-ghost btn-sm"
                                                 onClick={() => showToast.info(`Managing ${group.name}`)}
                                                 title="Manage Group"
                                             >
